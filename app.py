@@ -41,7 +41,6 @@ async def lifespan(app: FastAPI):
     print("Lifespan: Shutdown selesai.")
     print("-----------------------------------------")
 
-
 # --- FastAPI ---
 app = FastAPI(lifespan=lifespan)
 templates = Jinja2Templates(directory="templates")
@@ -61,7 +60,6 @@ async def get_leaderboard(session: AsyncSession = Depends(get_async_session)):
     except Exception as e:
         print(f"Error di /leaderboard: {e}")
         return {"error": "Gagal mengambil leaderboard."}
-
 
 @app.websocket("/ws/play/{username}")
 async def websocket_play(websocket: WebSocket, username: str):

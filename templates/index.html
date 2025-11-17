@@ -13,103 +13,91 @@
 </head>
 <body class="bg-gray-900 text-white min-h-screen flex items-center justify-center p-4">
 
-    <div class="w-full max-w-md bg-gray-800 rounded-lg shadow-xl p-8">
-
-        <!-- 1. Username Section -->
-        <div id="username-section">
-            <h1 class="text-3xl font-bold text-center mb-6 text-indigo-400">Typing Race</h1>
-            <label for="username" class="block text-sm font-medium text-gray-300 mb-2">Masukkan Username:</label>
-            <input type="text" id="username" class="w-full px-4 py-2 bg-gray-700 border border-gray-600 rounded-lg text-white focus:ring-indigo-500 focus:border-indigo-500" placeholder="Player123">
-            <button id="start-btn" class="w-full bg-indigo-600 hover:bg-indigo-700 text-white font-bold py-2 px-4 rounded-lg mt-4 transition duration-300">Mulai</button>
-            <p id="username-error" class="text-red-400 text-sm mt-2 hidden">Username tidak boleh kosong!</p>
-        </div>
-
-        <!-- 2. Menu Section -->
-        <div id="menu-section" class="hidden">
-            <h2 class="text-2xl font-bold text-center mb-6">Selamat Datang, <span id="welcome-username" class="text-indigo-400"></span>!</h2>
-            <div class="flex flex-col space-y-4">
-                <button id="play-btn" class="w-full bg-green-600 hover:bg-green-700 text-white font-bold py-3 px-4 rounded-lg transition duration-300">
-                    Play Game
-                </button>
-                <button id="leaderboard-btn" class="w-full bg-blue-600 hover:bg-blue-700 text-white font-bold py-3 px-4 rounded-lg transition duration-300">
-                    Lihat Leaderboard
-                </button>
-            </div>
-        </div>
-
-        <!-- 3. Game/Matchmaking Section -->
-        <div id="game-section" class="hidden text-center">
-            <h2 id="game-status" class="text-2xl font-semibold text-yellow-300">Menghubungkan...</h2>
-            <div id="loading-spinner" class="animate-spin rounded-full h-12 w-12 border-b-2 border-white mx-auto my-6"></div>
-            <p id="game-message" class="text-gray-300 mt-4"></p>
-            <button id="cancel-matchmaking-btn" class="mt-6 bg-red-600 hover:bg-red-700 text-white font-bold py-2 px-4 rounded-lg transition duration-300">
-                Batal
-            </button>
-        </div>
-
-        <!-- 4. Leaderboard Section -->
-        <div id="leaderboard-section" class="hidden">
-            <div class="flex justify-between items-center mb-4">
-                <h2 class="text-2xl font-bold text-indigo-400">Leaderboard</h2>
-                <button id="back-to-menu-btn" class="bg-gray-600 hover:bg-gray-700 text-white font-bold py-2 px-4 rounded-lg text-sm">&larr; Kembali</button>
-            </div>
-            <div id="leaderboard-loading" class="text-center">Memuat data...</div>
-            <ul id="leaderboard-list" class="space-y-2">
-                <!-- Data akan diisi oleh JS -->
-            </ul>
-        </div>
-
+    <div id="username-section" class="w-full max-w-md bg-gray-800 rounded-lg shadow-xl p-8">
+        <h1 class="text-3xl font-bold text-center mb-6 text-indigo-400">Typing Race</h1>
+        <label for="username" class="block text-sm font-medium text-gray-300 mb-2">Masukkan Username:</label>
+        <input type="text" id="username" class="w-full px-4 py-2 bg-gray-700 border border-gray-600 rounded-lg text-white focus:ring-indigo-500 focus:border-indigo-500" placeholder="Player123">
+        <button id="start-btn" class="w-full bg-indigo-600 hover:bg-indigo-700 text-white font-bold py-2 px-4 rounded-lg mt-4 transition duration-300">Mulai</button>
+        <p id="username-error" class="text-red-400 text-sm mt-2 hidden">Username tidak boleh kosong!</p>
     </div>
 
-    <div id="typing-section" class="hidden">
-        <h2 id="game-countdown" class="text-3xl font-bold text-center mb-4 text-indigo-400"></h2>
-        
-        <div class="mb-4 p-4 bg-gray-700 rounded-lg">
-            <p id="text-display" class="text-xl text-gray-300 leading-relaxed font-mono"></p>
-        </div>
-        
-        <input type="text" id="typing-input" class="w-full px-4 py-2 bg-gray-600 border border-gray-500 rounded-lg text-white focus:ring-indigo-500 focus:border-indigo-500" placeholder="Mulai mengetik..." disabled>
+    <div id="main-layout" class="hidden w-full max-w-6xl grid grid-cols-3 gap-6">
 
-        <div class="mt-4 text-center">
-            <span class="text-2xl font-bold text-indigo-400"><span id="wpm-display">0</span> WPM</span>
+        <div id="leaderboard-section" class="col-span-1 bg-gray-800 rounded-lg shadow-xl p-6 h-[80vh] flex flex-col">
+            <h2 class="text-2xl font-bold text-indigo-400 mb-4">Leaderboard</h2>
+            <div id="leaderboard-loading" class="text-center text-gray-400">Memuat data...</div>
+            <ul id="leaderboard-list" class="space-y-2 overflow-y-auto flex-grow">
+                </ul>
         </div>
 
-        <div class="mt-6">
-            <label for="opponent-progress" class="block text-sm font-medium text-gray-300 mb-2">
-                Progress Lawan (<span id="opponent-name">...</span>):
-            </label>
-            <div class="w-full bg-gray-700 rounded-full h-4">
-                <div id="opponent-progress-bar" class="bg-green-500 h-4 rounded-full transition-all duration-300" style="width: 0%"></div>
+        <div id="game-container" class="col-span-2 bg-gray-800 rounded-lg shadow-xl p-8 h-[80vh] flex flex-col">
+
+            <div id="game-menu" class="text-center m-auto">
+                <h2 class="text-2xl font-bold text-center mb-6">Selamat Datang, <span id="welcome-username" class="text-indigo-400"></span>!</h2>
+                <button id="play-btn" class="w-full max-w-xs mx-auto bg-green-600 hover:bg-green-700 text-white font-bold py-3 px-4 rounded-lg transition duration-300">
+                    Play Game
+                </button>
+            </div>
+
+            <div id="game-section" class="hidden text-center m-auto">
+                <h2 id="game-status" class="text-2xl font-semibold text-yellow-300">Menghubungkan...</h2>
+                <div id="loading-spinner" class="animate-spin rounded-full h-12 w-12 border-b-2 border-white mx-auto my-6"></div>
+                <p id="game-message" class="text-gray-300 mt-4"></p>
+                <button id="cancel-matchmaking-btn" class="mt-6 bg-red-600 hover:bg-red-700 text-white font-bold py-2 px-4 rounded-lg transition duration-300">
+                    Batal
+                </button>
+            </div>
+
+            <div id="typing-section" class="hidden h-full flex flex-col">
+                <h2 id="game-countdown" class="text-3xl font-bold text-center mb-4 text-indigo-400"></h2>
+                
+                <div class="mb-4 p-4 bg-gray-700 rounded-lg">
+                    <p id="text-display" class="text-xl text-gray-300 leading-relaxed font-mono h-32 overflow-y-auto"></p>
+                </div>
+                
+                <input type="text" id="typing-input" class="w-full px-4 py-2 bg-gray-600 border border-gray-500 rounded-lg text-white focus:ring-indigo-500 focus:border-indigo-500" placeholder="Mulai mengetik..." disabled>
+
+                <div class="mt-4 text-center">
+                    <span class="text-2xl font-bold text-indigo-400"><span id="wpm-display">0</span> WPM</span>
+                </div>
+
+                <div class="mt-6">
+                    <label for="opponent-progress" class="block text-sm font-medium text-gray-300 mb-2">
+                        Progress Lawan (<span id="opponent-name">...</span>):
+                    </label>
+                    <div class="w-full bg-gray-700 rounded-full h-4">
+                        <div id="opponent-progress-bar" class="bg-green-500 h-4 rounded-full transition-all duration-300" style="width: 0%"></div>
+                    </div>
+                </div>
+
+                <button id="play-again-btn" class="hidden mt-auto w-full bg-blue-600 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded-lg">
+                    Main Lagi
+                </button>
             </div>
         </div>
-
-        <button id="back-to-menu-game-btn" class="hidden mt-6 w-full bg-blue-600 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded-lg">
-            Kembali ke Menu
-        </button>
     </div>
 
     <script>
-        // Ambil elemen UI
         const usernameSection = document.getElementById('username-section');
         const usernameInput = document.getElementById('username');
         const usernameError = document.getElementById('username-error');
         const startBtn = document.getElementById('start-btn');
-
-        const menuSection = document.getElementById('menu-section');
         const welcomeUsername = document.getElementById('welcome-username');
+        const mainLayout = document.getElementById('main-layout');
+
+        const leaderboardSection = document.getElementById('leaderboard-section');
+        const leaderboardList = document.getElementById('leaderboard-list');
+        const leaderboardLoading = document.getElementById('leaderboard-loading');
+
+        const gameContainer = document.getElementById('game-container');
+        const gameMenu = document.getElementById('game-menu');
         const playBtn = document.getElementById('play-btn');
-        const leaderboardBtn = document.getElementById('leaderboard-btn');
-        
+
         const gameSection = document.getElementById('game-section');
         const gameStatus = document.getElementById('game-status');
         const gameMessage = document.getElementById('game-message');
         const loadingSpinner = document.getElementById('loading-spinner');
         const cancelMatchmakingBtn = document.getElementById('cancel-matchmaking-btn');
-
-        const leaderboardSection = document.getElementById('leaderboard-section');
-        const leaderboardList = document.getElementById('leaderboard-list');
-        const leaderboardLoading = document.getElementById('leaderboard-loading');
-        const backToMenuBtn = document.getElementById('back-to-menu-btn');
 
         const typingSection = document.getElementById('typing-section');
         const gameCountdown = document.getElementById('game-countdown');
@@ -118,16 +106,14 @@
         const wpmDisplay = document.getElementById('wpm-display');
         const opponentName = document.getElementById('opponent-name');
         const opponentProgressBar = document.getElementById('opponent-progress-bar');
-        const backToMenuGameBtn = document.getElementById('back-to-menu-game-btn');
+        const playAgainBtn = document.getElementById('play-again-btn'); 
 
         let targetText = "";
         let startTime = 0;
         let cachedLeaderboard = [];
-
-        let ws; // Variabel untuk WebSocket
+        let ws;
         let localUsername = '';
 
-        // --- 1. Logika Username ---
         startBtn.onclick = () => {
             const username = usernameInput.value.trim();
             if (username === '') {
@@ -139,69 +125,42 @@
             
             welcomeUsername.textContent = localUsername;
             usernameSection.classList.add('hidden');
-            menuSection.classList.remove('hidden');
+            mainLayout.classList.remove('hidden');
         };
 
-        // --- 2. Logika Tombol Menu ---
         playBtn.onclick = () => {
-            menuSection.classList.add('hidden');
+            gameMenu.classList.add('hidden');
             gameSection.classList.remove('hidden');
             connectToMatchmaking();
         };
 
-        leaderboardBtn.onclick = async () => {
-            menuSection.classList.add('hidden');
-            leaderboardSection.classList.remove('hidden');
-            leaderboardList.innerHTML = ''; // Kosongkan list
-            leaderboardLoading.classList.remove('hidden');
-
-            try {
-                let scores;
-                if (cachedLeaderboard.length > 0) {
-                    console.log("Menggunakan leaderboard dari cache...");
-                    scores = cachedLeaderboard;
-                    cachedLeaderboard = []; 
-                } else {
-                    console.log("Mengambil leaderboard baru dari server...");
-                    const response = await fetch('/leaderboard', { 
-                        cache: 'no-store' 
-                    });
-                    if (!response.ok) {
-                        throw new Error('Gagal memuat leaderboard');
-                    }
-                    scores = await response.json();
-                }
-                
-                leaderboardLoading.classList.add('hidden');
-                
-                if (scores.length === 0) {
-                    leaderboardList.innerHTML = '<li class="text-gray-400">Belum ada data.</li>';
-                    return;
-                }
-
-                scores.forEach((score, index) => {
-                    const li = document.createElement('li');
-                    li.className = 'flex justify-between items-center bg-gray-700 p-3 rounded-lg';
-                    li.innerHTML = `
-                        <div>
-                            <span class="font-bold text-white">${index + 1}. ${score.username}</span>
-                        </div>
-                        <span class="font-semibold text-indigo-300">${score.wpm} WPM</span>
-                    `;
-                    leaderboardList.appendChild(li);
-                });
-
-            } catch (error) {
-                leaderboardLoading.textContent = `Error: ${error.message}`;
+        cancelMatchmakingBtn.onclick = () => {
+            if (ws) {
+                ws.close();
             }
+            gameSection.classList.add('hidden');
+            gameMenu.classList.remove('hidden');
+            gameStatus.textContent = "Menghubungkan...";
+            gameStatus.classList.remove('text-green-400', 'text-red-400');
+            gameStatus.classList.add('text-yellow-300');
         };
 
-        backToMenuBtn.onclick = () => {
-            leaderboardSection.classList.add('hidden');
-            menuSection.classList.remove('hidden');
+        playAgainBtn.onclick = () => {
+            if (ws) {
+                ws.close();
+            }
+            typingSection.classList.add('hidden');
+            gameMenu.classList.remove('hidden');
+            gameCountdown.classList.add('hidden');
+            gameCountdown.classList.remove('text-green-400', 'text-red-400', 'text-yellow-400');
+            gameCountdown.textContent = '';
+            playAgainBtn.classList.add('hidden');
+            opponentProgressBar.style.width = '0%';
+            wpmDisplay.textContent = '0';
+            textDisplay.innerHTML = '';
+            typingInput.value = '';
         };
 
-        // --- 3. Logika Matchmaking ---
         function connectToMatchmaking() {
             const wsProtocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
             const wsUrl = `${wsProtocol}//${window.location.host}/ws/play/${localUsername}`;
@@ -240,7 +199,7 @@
                     gameCountdown.textContent = data.value; 
                 }
                 else if (data.type === 'start_game') {
-                    gameCountdown.textContent = "GO!";
+                    gameCountdown.textContent = "Mulai";
                     targetText = data.text;
                     renderTextDisplay(); 
                     
@@ -258,51 +217,46 @@
                 else if (data.type === 'game_over') {
                     typingInput.disabled = true;
                     gameCountdown.classList.remove('hidden');
+                    playAgainBtn.classList.remove('hidden');
                     
                     if (data.result === 'won') {
-                        // ... (logika menang)
+                        gameCountdown.textContent = "Kamu Menang";
+                        gameCountdown.classList.add('text-green-400');
+                    } else if (data.result === 'lost') {
+                        gameCountdown.textContent = "Kamu Kalah";
+                        gameCountdown.classList.add('text-red-400');
                     } else {
-                        // ... (logika kalah)
+                        gameCountdown.textContent = "Kamu Seri";
+                        gameCountdown.classList.add('text-yellow-400');
                     }
                     wpmDisplay.textContent = data.wpm; 
-                    backToMenuGameBtn.classList.remove('hidden');
-
-                    if (data.leaderboard) {
-                        cachedLeaderboard = data.leaderboard;
-                    }
                 }
                 
                 else if (data.status === 'opponent_disconnected') {
                     if (gameSection.classList.contains('hidden') === false) {
-                        gameStatus.textContent = "Lawan Terputus";
+                        gameStatus.textContent = "Lawan Disconnect";
                         gameStatus.classList.add('text-red-400');
                         gameMessage.textContent = data.message;
                         loadingSpinner.classList.add('hidden');
-                        cancelMatchmakingBtn.textContent = 'Kembali ke Menu';
-                        cancelMatchmakingBtn.classList.remove('hidden');
+                        cancelMatchmakingBtn.textContent = 'Kembali';
                     }
-
                     else if (typingSection.classList.contains('hidden') === false) {
                         typingInput.disabled = true;
                         gameCountdown.classList.remove('hidden');
-                        gameCountdown.textContent = "Lawan Terputus";
+                        gameCountdown.textContent = "Lawan Disconnect";
                         gameCountdown.classList.add('text-yellow-400');
-                        backToMenuGameBtn.classList.remove('hidden');
+                        playAgainBtn.classList.remove('hidden');
                     }
                 }
             };
 
             ws.onclose = () => {
                 console.log('Koneksi terputus.');
-                if (gameStatus.textContent.includes("Mencari")) {
+                if (gameSection.classList.contains('hidden') === false) {
                     gameStatus.textContent = "Dibatalkan";
                     gameMessage.textContent = "Anda membatalkan pencarian.";
-                } else if (gameStatus.textContent.includes("Lawan")) {
-
-                } else {
-                    gameStatus.textContent = "Koneksi Terputus";
+                    loadingSpinner.classList.add('hidden');
                 }
-                loadingSpinner.classList.add('hidden');
             };
 
             ws.onerror = (error) => {
@@ -345,7 +299,7 @@
             const progress = (correctChars / targetText.length) * 100;
             
             const elapsedMinutes = (Date.now() - startTime) / 60000;
-            const words = (currentText.length / 5); 
+            const words = (currentText.length / 5);
             const wpm = (elapsedMinutes > 0) ? Math.round(words / elapsedMinutes) : 0;
             
             wpmDisplay.textContent = wpm; 
@@ -360,55 +314,14 @@
 
         typingInput.oninput = () => {
             renderTextDisplay(); 
-            sendProgress();      
-
-            if (typingInput.value === targetText) {
-                ws.send(JSON.stringify({
+            sendProgress();       
+            if (typingInput.value.length === targetText.length) {
+                 ws.send(JSON.stringify({
                     type: 'finish'
                 }));
                 typingInput.disabled = true;
             }
         };
-
-        backToMenuGameBtn.onclick = () => {
-            if (ws) {
-                ws.close();
-            }
-            typingSection.classList.add('hidden');
-            menuSection.classList.remove('hidden');
-
-            gameCountdown.classList.remove('hidden', 'text-green-400', 'text-red-400', 'text-yellow-400');
-            gameCountdown.textContent = '';
-            backToMenuGameBtn.classList.add('hidden');
-            opponentProgressBar.style.width = '0%';
-            wpmDisplay.textContent = '0';
-        };
-
-        cancelMatchmakingBtn.onclick = () => {
-            if (ws) {
-                ws.close();
-            }
-            gameSection.classList.add('hidden');
-            menuSection.classList.remove('hidden');
-            gameStatus.textContent = "Menghubungkan...";
-            gameStatus.classList.remove('text-green-400', 'text-red-400');
-            gameStatus.classList.add('text-yellow-300');
-            cancelMatchmakingBtn.textContent = 'Batal';
-        };
-
-        cancelMatchmakingBtn.onclick = () => {
-            if (ws) {
-                ws.close();
-            }
-            gameSection.classList.add('hidden');
-            menuSection.classList.remove('hidden');
-            // Reset UI
-            gameStatus.textContent = "Menghubungkan...";
-            gameStatus.classList.remove('text-green-400', 'text-red-400');
-            gameStatus.classList.add('text-yellow-300');
-            cancelMatchmakingBtn.textContent = 'Batal';
-        };
-
     </script>
 </body>
 </html>

@@ -8,7 +8,6 @@ from models.score import Score
 from fastapi import WebSocket, WebSocketDisconnect
 from models.score import Score
 
-
 @dataclass
 class GameState:
     players: List[WebSocket]
@@ -17,7 +16,6 @@ class GameState:
     finished: bool = False
     winner: Optional[str] = None
     metadata: Dict[str, float] = field(default_factory=dict)
-
 
 class GameController:
     """
@@ -31,11 +29,7 @@ class GameController:
         self.game_states: Dict[WebSocket, GameState] = {}
         self.session_factory = session_factory
         self.text_pool = [
-            "FastAPI membuat pengembangan backend menjadi menyenangkan dan cepat.",
-            "Python asyncio memungkinkan kita menangani ribuan koneksi secara bersamaan.",
-            "Distributed system memerlukan koordinasi yang baik antar service.",
-            "SQLAlchemy async mempermudah akses database tanpa blocking.",
-            "Mengetik cepat butuh latihan, fokus, dan konsistensi ritme."
+            "The boy's name was Santiago. Dusk was falling as the boy arrived with his herd at an abandoned church. The roof had fallen in long ago, and an enormous sycamore had grown on the spot where the sacristy had once stood.",
         ]
 
     async def handle_connection(self, websocket: WebSocket, username: str) -> None:
