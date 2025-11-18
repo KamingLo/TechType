@@ -17,21 +17,7 @@ async def lifespan(app: FastAPI):
     print("-----------------------------------------")
     print("Lifespan: Memulai aplikasi...")
     await init_db()
-
-    # Tambahkan dummy leaderboard jika belum ada
-    async with get_async_session() as session:
-        async with session.begin():
-            result = await session.execute(select(Score).limit(1))
-            if result.first() is None:
-                session.add_all([
-                    Score(username="player_one", wpm=80),
-                    Score(username="fast_typer", wpm=102),
-                    Score(username="speedy", wpm=95),
-                ])
-                print("Lifespan: Dummy leaderboard ditambahkan.")
-            else:
-                print("Lifespan: Data leaderboard sudah ada.")
-
+    
     print("Lifespan: Startup selesai.")
     print("-----------------------------------------")
     yield
