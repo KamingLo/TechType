@@ -165,7 +165,6 @@
                     renderLeaderboard(msg.data || msg.leaderboard);
                 }
                 else if (msg.status === 'waiting') {
-                    // UPDATE: Menampilkan jumlah antrian dari server
                     els.queueCount.textContent = msg.waiting_count || 1;
                     els.loadingMsg.textContent = msg.message;
                 }

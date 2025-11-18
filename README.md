@@ -1,17 +1,24 @@
-Baik, berikut **README.md versi FINAL** yang **sudah digabung SEPENUHNYA**, tidak ada bagian terpisah, tidak ada lanjutan, tidak ada fragment.Ini **satu file README.md utuh**, rapi, lengkap, dan sudah memakai `pip install -r requirements.txt`.
-
-Kamu tinggal **copy–paste langsung**.
-
----
-
-```markdown
 # Typing Race – Real-time TCP Socket GameTyping Race adalah game adu cepat mengetik **real-time multiplayer** yang dibangun menggunakan:- Python asyncio  - TCP Raw Socket (bukan HTTP/REST)- AIOHTTP + WebSocket untuk antarmuka browser  - SQLite + SQLAlchemy async sebagai penyimpanan leaderboard  Arsitektur ini memungkinkan kontrol penuh terhadap aliran data, latensi rendah, dan komunikasi dua arah yang stabil.---## 🧠 Arsitektur SistemBrowser → WebSocket (AIOHTTP) → Bridge Client → TCP Raw Socket → Server GameBridge Client berfungsi sebagai translator karena browser tidak bisa melakukan koneksi TCP langsung. Semua protokol komunikasi antar server-client menggunakan JSON dalam satu baris (line-based).---## 📁 Struktur Direktori
 ```
 
-proyek_typing/├── client/│ ├── templates/│ │ └── index.html│ ├── client.py│ └── requirements.txt│└── server/├── controllers/│ └── game_controller.py├── database/├── models/│ └── score.py├── extensions.py├── server.py└── requirements.txt
+proyek_typing/
+├── client/
+    │ ├── templates/│ 
+    │ └── index.html│
+    ├── client.py│ 
+    └── requirements.txt│
+└── server/
+    ├── controllers/
+    │ └── game_controller.py
+    ├── database/
+    ├── models/
+    │ └── score.py
+    ├── extensions.py
+    ├── server.py
+    └──requirements.txt
 
 ```
----## ⚙️ Cara Instalasi & MenjalankanKamu harus membuka **dua terminal** karena server dan client berjalan terpisah.---### 1. Menjalankan TCP Server (Terminal 1)Port default: **50000**```shcd serverpip install -r requirements.txtpython server.py
+## ⚙️ Cara Instalasi & MenjalankanKamu harus membuka **dua terminal** karena server dan client berjalan terpisah.---### 1. Menjalankan TCP Server (Terminal 1)Port default: **50000**```shcd serverpip install -r requirements.txtpython server.py
 ```
 
 Output yang muncul:
@@ -27,7 +34,8 @@ TCP Server running on 0.0.0.0:50000
 Port default: **8000**
 
 ```sh
-cd clientpip install -r requirements.txtpython client.py
+cd clientpip install -r requirements.txt
+python client.py
 ```
 
 Output:
