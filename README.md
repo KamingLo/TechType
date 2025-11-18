@@ -1,4 +1,6 @@
-# Typing Race – Real-time TCP Socket GameTyping Race adalah game adu cepat mengetik **real-time multiplayer** yang dibangun menggunakan:- Python asyncio  - TCP Raw Socket (bukan HTTP/REST)- AIOHTTP + WebSocket untuk antarmuka browser  - SQLite + SQLAlchemy async sebagai penyimpanan leaderboard  Arsitektur ini memungkinkan kontrol penuh terhadap aliran data, latensi rendah, dan komunikasi dua arah yang stabil.---## 🧠 Arsitektur SistemBrowser → WebSocket (AIOHTTP) → Bridge Client → TCP Raw Socket → Server GameBridge Client berfungsi sebagai translator karena browser tidak bisa melakukan koneksi TCP langsung. Semua protokol komunikasi antar server-client menggunakan JSON dalam satu baris (line-based).---## 📁 Struktur Direktori
+### Typing Race – Real-time TCP Socket GameTyping 
+```
+Race adalah game adu cepat mengetik **real-time multiplayer** yang dibangun menggunakan:- Python asyncio  - TCP Raw Socket (bukan HTTP/REST)- AIOHTTP + WebSocket untuk antarmuka browser  - SQLite + SQLAlchemy async sebagai penyimpanan leaderboard  Arsitektur ini memungkinkan kontrol penuh terhadap aliran data, latensi rendah, dan komunikasi dua arah yang stabil.---## 🧠 Arsitektur SistemBrowser → WebSocket (AIOHTTP) → Bridge Client → TCP Raw Socket → Server GameBridge Client berfungsi sebagai translator karena browser tidak bisa melakukan koneksi TCP langsung. Semua protokol komunikasi antar server-client menggunakan JSON dalam satu baris (line-based).---## 📁 Struktur Direktori
 ```
 
 proyek_typing/
