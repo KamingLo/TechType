@@ -1,0 +1,321 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Typing Race TCP</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        /* Custom animation untuk spinner */
+        @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
+        .loader { border-top-color: #3498db; -webkit-animation: spin 1s linear infinite; animation: spin 1s linear infinite; }
+    </style>
+</head>
+<body class="bg-gray-900 text-white min-h-screen flex items-center justify-center p-4 font-mono">
+
+    <div id="username-section" class="w-full max-w-md bg-gray-800 rounded-lg shadow-xl p-8 border border-gray-700">
+        <h1 class="text-3xl font-bold text-center mb-6 text-indigo-400 tracking-wider">TYPING RACE</h1>
+        <div class="mb-4">
+            <label class="block text-gray-400 text-sm mb-2">Username</label>
+            <input type="text" id="username" class="w-full px-4 py-3 bg-gray-700 rounded border border-gray-600 text-white focus:outline-none focus:border-indigo-500 transition-colors" placeholder="Masukkan nama...">
+        </div>
+        <button id="start-btn" class="w-full bg-indigo-600 hover:bg-indigo-700 text-white font-bold py-3 px-4 rounded transition-all transform hover:scale-105">MASUK ARENA</button>
+    </div>
+    
+    <div id="main-layout" class="hidden w-full max-w-6xl grid grid-cols-1 lg:grid-cols-3 gap-6">
+        
+        
+        <div class="lg:col-span-2 bg-gray-800 rounded-lg border border-gray-700 p-8 h-[80vh] flex flex-col relative shadow-lg">
+            
+            <div id="game-menu" class="flex flex-col items-center justify-center h-full">
+                <h2 class="text-3xl mb-2 font-bold">Halo, <span id="display-username" class="text-indigo-400">Player</span></h2>
+                <p class="text-gray-400 mb-8">Siap menguji kecepatan jarimu?</p>
+                
+                <button id="play-btn" class="bg-green-600 hover:bg-green-500 text-white font-bold py-4 px-10 rounded-full text-xl shadow-lg transition-all transform hover:scale-105 flex items-center">
+                    <span>⚔️ CARI LAWAN</span>
+                </button>
+            </div>
+            
+            <div id="game-loading" class="hidden flex flex-col items-center justify-center h-full">
+                <div class="loader ease-linear rounded-full border-8 border-t-8 border-gray-200 h-24 w-24 mb-6"></div>
+                <h2 class="text-2xl font-bold text-yellow-400 mb-2">Mencari Lawan...</h2>
+                <p class="text-gray-300">Pemain dalam antrian: <span id="queue-count" class="font-bold text-white text-xl">0</span></p>
+                <p id="loading-msg" class="text-gray-500 text-sm mt-4 animate-pulse">Menunggu koneksi...</p>
+            </div>
+            
+            <div id="game-play" class="hidden h-full flex flex-col">
+                <div id="countdown" class="absolute inset-0 flex items-center justify-center bg-gray-900/90 z-50 text-9xl font-bold text-yellow-400 hidden">3</div>
+                
+                <div class="mb-6 bg-gray-900 p-4 rounded-lg border border-gray-700">
+                    <div class="flex justify-between mb-1">
+                        <span class="text-red-400 font-bold text-sm">LAWAN: <span id="opp-name">...</span></span>
+                        <span class="text-red-400 text-sm" id="opp-percent">0%</span>
+                    </div>
+                    <div class="w-full bg-gray-700 rounded-full h-3">
+                        <div id="opp-progress-bar" class="bg-red-500 h-3 rounded-full transition-all duration-300" style="width: 0%"></div>
+                    </div>
+                </div>
+                
+                <div class="flex-grow bg-gray-700 p-6 rounded-lg mb-6 overflow-auto border border-gray-600 shadow-inner">
+                    <p id="text-target" class="text-xl leading-loose font-mono text-gray-300"></p>
+                </div>
+                
+                <div>
+                    <div class="flex justify-between mb-2 items-end">
+                        <span class="text-green-400 font-bold">SAYA</span>
+                        <div class="text-right">
+                            <span class="text-3xl font-bold text-white" id="my-wpm">0</span>
+                            <span class="text-gray-400 text-sm">WPM</span>
+                        </div>
+                    </div>
+                    
+                    <input type="text" id="typing-input" class="w-full bg-gray-900 border-2 border-gray-600 p-4 rounded-lg text-white text-lg focus:border-green-500 focus:outline-none transition-colors" placeholder="Ketik di sini..." disabled autocomplete="off">
+                    
+                    <div class="w-full bg-gray-700 rounded-full h-2 mt-3">
+                        <div id="my-progress-bar" class="bg-green-500 h-2 rounded-full transition-all duration-100" style="width: 0%"></div>
+                    </div>
+                </div>
+            </div>
+
+            
+        </div>
+
+        <div class="lg:col-span-1 bg-gray-800 rounded-lg border border-gray-700 p-6 h-[80vh] flex flex-col shadow-lg">
+            <h2 class="text-xl font-bold text-yellow-400 mb-4 border-b border-gray-600 pb-2 flex items-center">
+                <span class="mr-2">🏆</span> LEADERBOARD
+            </h2>
+            <ul id="leaderboard-list" class="space-y-2 overflow-y-auto pr-2 custom-scrollbar">
+                <li class="text-gray-500 text-center italic mt-10">Menghubungkan ke server...</li>
+            </ul>
+        </div>
+    </div>
+    
+    <script>
+        const wsProtocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
+        let ws;
+        let username = '';
+        let targetText = '';
+        let startTime = 0;
+
+        // --- DOM ELEMENTS ---
+        const els = {
+            // Sections
+            loginSec: document.getElementById('username-section'),
+            mainLayout: document.getElementById('main-layout'),
+            
+            // Game States
+            menuState: document.getElementById('game-menu'),
+            loadingState: document.getElementById('game-loading'),
+            playState: document.getElementById('game-play'),
+
+            // Login Inputs
+            inputUser: document.getElementById('username'),
+            btnStart: document.getElementById('start-btn'),
+            
+            // Loading UI
+            queueCount: document.getElementById('queue-count'),
+            loadingMsg: document.getElementById('loading-msg'),
+
+            // Game UI
+            btnPlay: document.getElementById('play-btn'),
+            leaderboard: document.getElementById('leaderboard-list'),
+            textDisplay: document.getElementById('text-target'),
+            inputTyping: document.getElementById('typing-input'),
+            
+            // Stats & Bars
+            myWpm: document.getElementById('my-wpm'),
+            myBar: document.getElementById('my-progress-bar'),
+            oppName: document.getElementById('opp-name'),
+            oppBar: document.getElementById('opp-progress-bar'),
+            oppPercent: document.getElementById('opp-percent'),
+            
+            // Overlays
+            countdown: document.getElementById('countdown'),
+            displayName: document.getElementById('display-username')
+        };
+
+        // --- EVENT LISTENERS ---
+        els.btnStart.onclick = () => {
+            username = els.inputUser.value.trim();
+            if(!username) return alert("Username tidak boleh kosong!");
+            
+            els.loginSec.classList.add('hidden');
+            els.mainLayout.classList.remove('hidden');
+            els.displayName.textContent = username;
+
+            initSocket();
+        };
+
+        els.btnPlay.onclick = () => {
+            switchState('loading');
+            ws.send(JSON.stringify({ type: "req_matchmaking" }));
+        };
+
+        // --- SOCKET LOGIC ---
+        function initSocket() {
+            ws = new WebSocket(`${wsProtocol}//${window.location.host}/stream/${username}`);
+
+            ws.onopen = () => { console.log("Connected to Bridge"); };
+
+            ws.onmessage = (e) => {
+                const msg = JSON.parse(e.data);
+                console.log("IN:", msg);
+
+                if (msg.type === 'res_leaderboard' || msg.type === 'leaderboard_update') {
+                    renderLeaderboard(msg.data || msg.leaderboard);
+                }
+                else if (msg.status === 'waiting') {
+                    // UPDATE: Menampilkan jumlah antrian dari server
+                    els.queueCount.textContent = msg.waiting_count || 1;
+                    els.loadingMsg.textContent = msg.message;
+                }
+                else if (msg.status === 'matched') {
+                    els.loadingMsg.textContent = "Lawan ditemukan! Memulai...";
+                    els.oppName.textContent = msg.opponent;
+                    setTimeout(() => switchState('play'), 500);
+                }
+                else if (msg.type === 'countdown') {
+                    els.countdown.classList.remove('hidden');
+                    els.countdown.textContent = msg.value;
+                }
+                else if (msg.type === 'start_game') {
+                    els.countdown.textContent = "GO!";
+                    targetText = msg.text;
+                    startGameLogic();
+                    setTimeout(() => els.countdown.classList.add('hidden'), 1000);
+                }
+                else if (msg.type === 'opponent_progress') {
+                    const prog = Math.round(msg.progress || 0);
+                    els.oppBar.style.width = `${prog}%`;
+                    els.oppPercent.textContent = `${prog}%`;
+                }
+                else if (msg.type === 'game_over') {
+                    endGameLogic(msg);
+                }
+                else if (msg.status === 'opponent_disconnected') {
+                    alert("Lawan terputus!");
+                    resetGameUI();
+                }
+            };
+        }
+
+        // --- GAME LOGIC HELPERS ---
+
+        function switchState(state) {
+            els.menuState.classList.add('hidden');
+            els.loadingState.classList.add('hidden');
+            els.playState.classList.add('hidden');
+
+            if (state === 'menu') els.menuState.classList.remove('hidden');
+            if (state === 'loading') els.loadingState.classList.remove('hidden');
+            if (state === 'play') els.playState.classList.remove('hidden');
+        }
+
+        function startGameLogic() {
+            renderText();
+            els.inputTyping.disabled = false;
+            els.inputTyping.value = '';
+            els.inputTyping.focus();
+            els.myBar.style.width = '0%';
+            els.oppBar.style.width = '0%';
+            els.oppPercent.textContent = '0%';
+            els.myWpm.textContent = '0';
+            startTime = Date.now();
+        }
+
+        function endGameLogic(msg) {
+            els.inputTyping.disabled = true;
+            els.countdown.classList.remove('hidden');
+            
+            if (msg.result === 'won') {
+                els.countdown.innerHTML = '<span class="text-green-500">MENANG!</span>';
+            } else {
+                els.countdown.innerHTML = '<span class="text-red-500">KALAH!</span>';
+            }
+            
+            // Update leaderboard jika ada
+            if(msg.leaderboard) renderLeaderboard(msg.leaderboard);
+
+            setTimeout(() => {
+                els.countdown.classList.add('hidden');
+                resetGameUI();
+            }, 3000);
+        }
+
+        function resetGameUI() {
+            switchState('menu');
+            els.queueCount.textContent = '0';
+            els.inputTyping.value = '';
+        }
+
+        function renderLeaderboard(data) {
+            if (!data) return;
+            els.leaderboard.innerHTML = '';
+            data.forEach((d, i) => {
+                const li = document.createElement('li');
+                let rankColor = "text-gray-400";
+                if (i === 0) rankColor = "text-yellow-400";
+                if (i === 1) rankColor = "text-gray-300";
+                if (i === 2) rankColor = "text-orange-400";
+
+                li.className = "flex justify-between items-center bg-gray-700/50 p-3 rounded hover:bg-gray-700 transition-colors";
+                li.innerHTML = `
+                    <div>
+                        <span class="font-bold mr-3 ${rankColor}">#${i+1}</span>
+                        <span class="font-semibold text-white">${d.username}</span>
+                    </div>
+                    <span class="font-mono text-indigo-300 font-bold">${d.wpm} WPM</span>
+                `;
+                els.leaderboard.appendChild(li);
+            });
+        }
+
+        function renderText() {
+            els.textDisplay.innerHTML = '';
+            const input = els.inputTyping.value;
+            targetText.split('').forEach((char, i) => {
+                const span = document.createElement('span');
+                span.textContent = char;
+                if (i < input.length) {
+                    span.className = input[i] === char ? "text-green-400 border-b-2 border-green-500" : "text-red-400 bg-red-900/50 border-b-2 border-red-500";
+                } else {
+                    span.className = "text-gray-500";
+                }
+                els.textDisplay.appendChild(span);
+            });
+        }
+
+        els.inputTyping.oninput = () => {
+            renderText();
+            const input = els.inputTyping.value;
+            
+            // Calc WPM
+            const elapsed = (Date.now() - startTime) / 60000;
+            const wpm = Math.round((input.length / 5) / (elapsed || 1));
+            els.myWpm.textContent = wpm;
+
+            // Calc Progress
+            let correct = 0;
+            for(let i=0; i<input.length; i++) {
+                if(input[i] === targetText[i]) correct++;
+                else break;
+            }
+            const progress = (correct / targetText.length) * 100;
+            els.myBar.style.width = `${progress}%`;
+
+            // Send to server
+            ws.send(JSON.stringify({
+                type: "progress",
+                progress: progress,
+                wpm: wpm
+            }));
+
+            // Check finish
+            if (input === targetText) {
+                ws.send(JSON.stringify({ type: "finish", wpm: wpm }));
+                els.inputTyping.disabled = true;
+            }
+        };
+    </script>
+</body>
+</html>
