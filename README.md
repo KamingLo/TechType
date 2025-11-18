@@ -1,48 +1,160 @@
-Typing Race (TCP Socket Implementation)Proyek ini adalah game adu cepat mengetik (typing race) real-time yang dibangun menggunakan Python asyncio dengan komunikasi data berbasis TCP Raw Socket (bukan HTTP/REST API).Proyek ini terdiri dari dua komponen utama:Server (server/): Menjalankan TCP Server murni untuk logika game, matchmaking, dan database.Client (client/): Menjalankan Web Server (AIOHTTP) yang menyajikan antarmuka HTML dan bertindak sebagai bridge (jembatan) antara browser (WebSocket) dan server backend (TCP).Arsitektur SistemsequenceDiagram
-    participant Browser as Browser (HTML/JS)
-    participant Client as Client.py (Bridge)
-    participant Server as Server.py (TCP)
-    
-    Note over Browser, Client: Protokol WebSocket
-    Note over Client, Server: Protokol TCP Raw Socket (JSON Line-based)
+Baik, berikut **README.md versi FINAL** yang **sudah digabung SEPENUHNYA**, tidak ada bagian terpisah, tidak ada lanjutan, tidak ada fragment.Ini **satu file README.md utuh**, rapi, lengkap, dan sudah memakai `pip install -r requirements.txt`.
 
-    Browser->>Client: Connect WebSocket (/stream/user1)
-    Client->>Server: Connect TCP (Port 50000)
-    
-    Client->>Server: Login Handshake {"type": "login", ...}
-    Server-->>Client: Response Leaderboard
-    Client-->>Browser: Render Leaderboard
-    
-    Browser->>Client: Request Match {"type": "req_matchmaking"}
-    Client->>Server: Forward TCP
-    Server-->>Client: Matched! {"status": "matched"}
-    Client-->>Browser: Show Game UI
-Mengapa Arsitektur Ini?Low Level Control: Menggunakan TCP stream memungkinkan kontrol penuh atas aliran data tanpa overhead HTTP header.Full Duplex: Komunikasi dua arah yang persisten sangat cocok untuk game real-time.Bridging: Browser tidak bisa melakukan koneksi TCP murni (hanya WebSocket), sehingga client.py bertindak sebagai penerjemah.Struktur DirektoriPastikan struktur folder Anda terlihat seperti ini:proyek_typing/
-├── client/
-│   ├── templates/
-│   │   └── index.html  <-- UI Game (Tailwind CSS)
-│   ├── client.py       <-- Web Server & TCP Bridge
-│   └── requirements.txt
-│
-└── server/
-    ├── controllers/
-    │   └── game_controller.py <-- Logika Inti Game (TCP Handler)
-    ├── database/       <-- File .db akan muncul di sini
-    ├── models/
-    │   └── score.py    <-- Definisi Tabel Database
-    ├── extensions.py   <-- Config Database (Async)
-    ├── server.py       <-- Entry Point TCP Server
-    └── requirements.txt
-Cara Instalasi & MenjalankanAnda memerlukan dua terminal terpisah.1. Persiapan Server (Terminal 1)Server akan berjalan di port 50000 (TCP).cd server
-# Install dependensi
-pip install sqlalchemy aiosqlite
+Kamu tinggal **copy–paste langsung**.
 
-# Jalankan Server
-python server.py
-Output: Menjalankan TCP Server di 0.0.0.0:500002. Persiapan Client (Terminal 2)Client akan berjalan di port 8000 (HTTP).cd client
-# Install dependensi
-pip install aiohttp jinja2
+---
 
-# Jalankan Client
-python client.py
-Output: Menjalankan CLIENT WEB & BRIDGE di http://localhost:80003. BermainBuka browser dan akses: http://localhost:8000Protokol Komunikasi (TCP JSON)Semua pesan dikirim dalam format JSON satu baris, diakhiri dengan karakter newline (\n).Dari Client ke ServerTipe PesanPayload JSONDeskripsiLogin{"type": "login", "username": "Budi"}Dikirim otomatis saat koneksi pertama kali terbentuk.Matchmaking{"type": "req_matchmaking"}Meminta server mencarikan lawan.Progress{"type": "progress", "progress": 50, "wpm": 80}Update status ketikan (real-time).Finish{"type": "finish", "wpm": 100}Memberitahu server bahwa user selesai mengetik.Leaderboard{"type": "req_leaderboard"}Meminta data leaderboard terbaru.Dari Server ke ClientTipe PesanPayload JSONDeskripsiRes Leaderboard{"type": "res_leaderboard", "data": [...]}Data leaderboard (Top 10).Waiting{"status": "waiting", "waiting_count": 1}Sedang menunggu lawan (info jumlah antrian).Matched{"status": "matched", "opponent": "Ani"}Lawan ditemukan.Countdown{"type": "countdown", "value": 3}Hitung mundur (3, 2, 1).Start Game{"type": "start_game", "text": "..."}Game dimulai, teks target dikirim.Opp Progress{"type": "opponent_progress", "progress": 50}Update progress lawan untuk visualisasi bar.Game Over{"type": "game_over", "result": "won/lost"}Hasil akhir game + update leaderboard.Fitur UtamaReal-time Multiplayer: Sinkronisasi progress bar lawan secara instan.Leaderboard Persisten: Data skor disimpan di SQLite dan ditampilkan ulang setiap kali login atau game selesai.Smart Matchmaking:Jika ada pemain menunggu, langsung dipasangkan.Jika tidak, masuk antrian (queue).Menampilkan jumlah orang dalam antrian.Penanganan Disconnect:Jika lawan keluar saat main, game otomatis berhenti dan memberi notifikasi menang/batal.Membersihkan antrian jika pemain menutup browser saat menunggu.
+```markdown
+# Typing Race – Real-time TCP Socket GameTyping Race adalah game adu cepat mengetik **real-time multiplayer** yang dibangun menggunakan:- Python asyncio  - TCP Raw Socket (bukan HTTP/REST)- AIOHTTP + WebSocket untuk antarmuka browser  - SQLite + SQLAlchemy async sebagai penyimpanan leaderboard  Arsitektur ini memungkinkan kontrol penuh terhadap aliran data, latensi rendah, dan komunikasi dua arah yang stabil.---## 🧠 Arsitektur SistemBrowser → WebSocket (AIOHTTP) → Bridge Client → TCP Raw Socket → Server GameBridge Client berfungsi sebagai translator karena browser tidak bisa melakukan koneksi TCP langsung. Semua protokol komunikasi antar server-client menggunakan JSON dalam satu baris (line-based).---## 📁 Struktur Direktori
+```
+
+proyek_typing/├── client/│ ├── templates/│ │ └── index.html│ ├── client.py│ └── requirements.txt│└── server/├── controllers/│ └── game_controller.py├── database/├── models/│ └── score.py├── extensions.py├── server.py└── requirements.txt
+
+```
+---## ⚙️ Cara Instalasi & MenjalankanKamu harus membuka **dua terminal** karena server dan client berjalan terpisah.---### 1. Menjalankan TCP Server (Terminal 1)Port default: **50000**```shcd serverpip install -r requirements.txtpython server.py
+```
+
+Output yang muncul:
+
+```
+TCP Server running on 0.0.0.0:50000
+```
+
+---
+
+### 2. Menjalankan Client Bridge + Web (Terminal 2)
+
+Port default: **8000**
+
+```sh
+cd clientpip install -r requirements.txtpython client.py
+```
+
+Output:
+
+```
+CLIENT WEB running at http://localhost:8000
+```
+
+---
+
+### 3. Jalankan di Browser
+
+Buka:
+
+```
+http://localhost:8000
+```
+
+Game akan otomatis memulai login, menampilkan leaderboard, dan siap matchmaking.
+
+---
+
+## 🔌 Protokol Komunikasi (TCP JSON Line-Based)
+
+Semua paket dikirim dalam satu baris JSON diakhiri `n`.
+
+---
+
+## ➤ Dari Client → Server
+
+### Login
+
+```json
+{"type": "login", "username": "Budi"}
+```
+
+### Matchmaking
+
+```json
+{"type": "req_matchmaking"}
+```
+
+### Update Progress
+
+```json
+{"type": "progress", "progress": 60, "wpm": 83}
+```
+
+### Finish
+
+```json
+{"type": "finish", "wpm": 100}
+```
+
+### Request Leaderboard
+
+```json
+{"type": "req_leaderboard"}
+```
+
+---
+
+## ➤ Dari Server → Client
+
+### Leaderboard
+
+```json
+{"type": "res_leaderboard", "data": [...]}
+```
+
+### Status Waiting
+
+```json
+{"status": "waiting", "waiting_count": 1}
+```
+
+### Match Found
+
+```json
+{"status": "matched", "opponent": "Ani"}
+```
+
+### Countdown
+
+```json
+{"type": "countdown", "value": 3}
+```
+
+### Start Game
+
+```json
+{"type": "start_game", "text": "lorem ipsum ..."}
+```
+
+### Opponent Progress
+
+```json
+{"type": "opponent_progress", "progress": 40}
+```
+
+### Game Over
+
+```json
+{"type": "game_over", "result": "won"}
+```
+
+---
+
+## 🧩 Fitur Utama
+
+-   Multiplayer real-time dua arah berbasis TCP
+-   Progress bar sinkron antar pemain
+-   Sistem matchmaking otomatis + queue
+-   Countdown realtime 3-2-1
+-   Leaderboard tersimpan di SQLite
+-   Deteksi disconnect lawan
+-   Bridge WebSocket ↔ TCP untuk kompatibilitas browser
+-   Architecture clean: server fokus logika game, client fokus UI dan jembatan
+
+---
+
+## 🌌 Catatan Pengembangan
+
+Arsitektur ini sangat fleksibel dan bisa dengan mudah dikembangkan menjadi:battle typing, quiz duel, catur real-time, turn-based combat, atau berbagai game sync lainnya karena pondasinya sudah mendukung sinkronisasi low-latency dan event-driven.
+
+---
+
+## 📜 Lisensi
+
+Bebas digunakan untuk belajar maupun proyek pengembangan lanjutan.
