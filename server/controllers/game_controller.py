@@ -16,15 +16,13 @@ class GameState:
     finished: bool = False
     winner: Optional[str] = None
     
-
     progress_map: Dict[asyncio.StreamWriter, float] = field(default_factory=dict)
-
     wpm_map: Dict[asyncio.StreamWriter, int] = field(default_factory=dict)
 
 class GameController:
 
     def __init__(self, session_factory: Callable):
-        self.game_duration = 90 
+        self.game_duration = 90
         self.waiting_players: List[asyncio.StreamWriter] = []
         self.waiting_events: Dict[asyncio.StreamWriter, asyncio.Event] = {}
         self.opponents: Dict[asyncio.StreamWriter, asyncio.StreamWriter] = {}
@@ -40,7 +38,7 @@ class GameController:
 
     async def handle_connection(self, reader: asyncio.StreamReader, writer: asyncio.StreamWriter) -> None:
         addr = writer.get_extra_info('peername')
-        print(f"[SERVER] Koneksi baru dari {addr}")
+        print(f"[SERVER] Koneksi baru masuk dari {addr}...") 
         username = "Unknown"
 
         try:
@@ -48,25 +46,36 @@ class GameController:
             if not line: return
 
             try:
+        
+                print(f"[SERVER] << Raw Data Login dari {addr}: {line.decode().strip()}")
+                
                 login_msg = json.loads(line.decode().strip())
                 if login_msg.get('type') == 'login':
                     username = login_msg.get('username')
                     self.player_usernames[writer] = username
                     self.active_connections.add(writer)
-                    print(f"[SERVER] User login: {username}")
                     
+                    print(f"[SERVER] {username} has connected.")
+                    
+            
                     lb_data = await self._get_leaderboard()
                     await self._safe_send(writer, {"type": "res_leaderboard", "data": lb_data})
                 else:
                     return
             except json.JSONDecodeError:
+                print(f"[SERVER] Error decode JSON saat login dari {addr}")
                 return
 
             while True:
                 line = await reader.readline()
                 if not line: break
                 try:
-                    message = json.loads(line.decode().strip())
+                    decoded_line = line.decode().strip()
+            
+                    if "progress" not in decoded_line: 
+                        print(f"[SERVER] << Diterima dari {username}: {decoded_line}")
+                    
+                    message = json.loads(decoded_line)
                     await self._process_general_message(writer, message)
                 except json.JSONDecodeError:
                     continue
@@ -79,7 +88,7 @@ class GameController:
                 writer.close()
                 await writer.wait_closed()
             except: pass
-            print(f"[SERVER] Koneksi {username} ditutup.")
+            print(f"[SERVER] Koneksi {username} ditutup sepenuhnya.")
 
     async def _process_general_message(self, writer: asyncio.StreamWriter, message: dict) -> None:
         msg_type = message.get("type")
@@ -88,6 +97,7 @@ class GameController:
             leaderboard_data = await self._get_leaderboard()
             await self._safe_send(writer, {"type": "res_leaderboard", "data": leaderboard_data})
         elif msg_type == "req_matchmaking":
+            print(f"[SERVER] {self.player_usernames.get(writer)} meminta matchmaking...")
             await self._handle_matchmaking_logic(writer)
         elif msg_type in ["progress", "finish"]:
             await self._process_game_play_message(writer, message)
@@ -100,6 +110,7 @@ class GameController:
             while self.waiting_players:
                 opponent = self.waiting_players.pop(0)
                 if not opponent.is_closing():
+                    print(f"[SERVER] Match found! Memulai game...")
                     await self._begin_match(opponent, writer)
                     return
             await self._enqueue_player(writer)
@@ -109,6 +120,7 @@ class GameController:
         if msg_type == "progress":
             await self._relay_progress(writer, message)
         elif msg_type == "finish":
+            print(f"[SERVER] {self.player_usernames.get(writer)} menyelesaikan balapan!")
             await self._finish_game(writer, message)
 
     async def _enqueue_player(self, writer: asyncio.StreamWriter) -> bool:
@@ -117,6 +129,8 @@ class GameController:
         self.waiting_events[writer] = event
         
         count = len(self.waiting_players)
+        print(f"[SERVER] {self.player_usernames.get(writer)} masuk antrian. Total antrian: {count}")
+        
         await self._safe_send(writer, {
             "status": "waiting", 
             "message": "Menunggu pemain lain...",
@@ -148,6 +162,8 @@ class GameController:
         p1_name = self.player_usernames.get(player1, "Unknown")
         p2_name = self.player_usernames.get(player2, "Unknown")
 
+        print(f"[SERVER] Memulai Match: {p1_name} vs {p2_name}")
+
         await self._safe_send(player1, {"status": "matched", "opponent": p2_name})
         await self._safe_send(player2, {"status": "matched", "opponent": p1_name})
 
@@ -162,6 +178,7 @@ class GameController:
             await asyncio.sleep(1)
         
         state.start_time = asyncio.get_running_loop().time()
+        print(f"[SERVER] GO! Game dimulai untuk {len(state.players)} pemain.")
         
         await self._broadcast(state.players, {
             "type": "start_game", 
@@ -186,7 +203,6 @@ class GameController:
             prog2 = state.progress_map.get(p2, 0)
             
             winner_name = None
-            
             if prog1 > prog2:
                 winner_name = self.player_usernames.get(p1, "Unknown")
                 state.winner = winner_name
@@ -194,22 +210,15 @@ class GameController:
                 winner_name = self.player_usernames.get(p2, "Unknown")
                 state.winner = winner_name
             
-        
-        
-        
             text_len = len(state.target_text)
-            
-        
             char_p1 = int((prog1 / 100) * text_len)
             char_p2 = int((prog2 / 100) * text_len)
             
-        
             wpm_p1 = self._calculate_wpm(char_p1, self.game_duration)
             wpm_p2 = self._calculate_wpm(char_p2, self.game_duration)
             
             lb_data = await self._get_leaderboard()
             
-        
             await self._safe_send(p1, {
                 "type": "game_over",
                 "reason": "timeout",
@@ -219,7 +228,6 @@ class GameController:
                 "leaderboard": lb_data
             })
             
-        
             await self._safe_send(p2, {
                 "type": "game_over",
                 "reason": "timeout",
@@ -239,7 +247,6 @@ class GameController:
         state = self.game_states.get(writer)
         if state and not state.finished:
             state.progress_map[writer] = message.get("progress", 0)
-        
             state.wpm_map[writer] = message.get("wpm", 0)
 
         opponent = self.opponents.get(writer)
@@ -257,17 +264,16 @@ class GameController:
         opponent = self.opponents.get(writer)
         username = self.player_usernames.get(writer, "Unknown")
         
-    
         now = asyncio.get_running_loop().time()
         race_time = max(now - (state.start_time or now), 0.1)
         
-    
         correct_chars = len(state.target_text)
         winner_wpm = self._calculate_wpm(correct_chars, race_time)
         
         state.finished = True
         state.winner = username
         
+        print(f"[SERVER] Menyimpan skor untuk {username} (WPM: {winner_wpm})")
         await self._record_score(username, winner_wpm)
         new_leaderboard = await self._get_leaderboard()
         await self._broadcast_leaderboard_update(new_leaderboard)
@@ -278,29 +284,22 @@ class GameController:
             "leaderboard": new_leaderboard
         }
         
-    
         await self._safe_send(writer, {
             **base_msg, 
             "result": "won", 
             "wpm": winner_wpm 
         })
         
-    
-    
-    
         if opponent:
             opp_progress_pct = state.progress_map.get(opponent, 0)
-        
             opp_correct_chars = int((opp_progress_pct / 100) * len(state.target_text))
-            
-        
             opponent_adjusted_wpm = self._calculate_wpm(opp_correct_chars, race_time)
             
             await self._safe_send(opponent, {
                 **base_msg, 
                 "result": "lost", 
                 "winner": username,
-                "wpm": opponent_adjusted_wpm
+                "wpm": opponent_adjusted_wpm 
             })
             await self._cleanup_player(opponent)
             
@@ -311,10 +310,14 @@ class GameController:
             async with self.session_factory() as session:
                 async with session.begin():
                     session.add(Score(username=username, wpm=wpm))
+            print(f"[SERVER] Skor DB Updated: {username} - {wpm} WPM")
         except Exception as exc:
-            print(f"Gagal menyimpan skor: {exc}")
+            print(f"[SERVER] Gagal menyimpan skor: {exc}")
 
     async def _get_leaderboard(self) -> List[dict]:
+        """
+        Mengambil top 10 leaderboard dari database.
+        """
         try:
             async with self.session_factory() as session:
                 max_wpm = func.max(Score.wpm).label("max_wpm")
@@ -322,9 +325,11 @@ class GameController:
                 result = await session.execute(query)
                 return [{"username": row.username, "wpm": row.max_wpm} for row in result.all()]
         except Exception as exc:
+            print(f"[SERVER] Error mengambil leaderboard: {exc}")
             return []
 
     async def _broadcast_leaderboard_update(self, data: List[dict]):
+        print(f"[SERVER] Broadcasting Leaderboard Update ke {len(self.active_connections)} user.")
         payload = {"type": "leaderboard_update", "leaderboard": data}
         active = list(self.active_connections)
         for writer in active:
@@ -337,15 +342,25 @@ class GameController:
     async def _safe_send(self, writer: asyncio.StreamWriter, payload: dict) -> None:
         try:
             if writer.is_closing(): return
+            
+    
+            username = self.player_usernames.get(writer, "Unknown")
+            msg_type = payload.get("type", "unknown")
+            if msg_type not in ["opponent_progress", "countdown"]:
+                print(f"[SERVER] >> Mengirim ke {username}: {json.dumps(payload)}")
+
             data = json.dumps(payload) + "\n"
             writer.write(data.encode())
             await writer.drain()
-        except Exception: pass
+        except Exception as e:
+            print(f"[SERVER] Gagal mengirim data ke client: {e}")
 
     async def _handle_disconnect(self, writer: asyncio.StreamWriter) -> None:
         if writer in self.active_connections:
             self.active_connections.remove(writer)
         username = self.player_usernames.pop(writer, "Unknown")
+        print(f"[SERVER] Handling disconnect: {username}")
+        
         if writer in self.waiting_players:
             self._cleanup_waiting(writer)
         opponent = self.opponents.get(writer)

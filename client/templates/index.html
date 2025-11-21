@@ -11,16 +11,14 @@
         .no-select {
             -webkit-touch-callout: none;
             -webkit-user-select: none;
-            -khtml-user-select: none;
-            -moz-user-select: none;
-            -ms-user-select: none;
             user-select: none;
         }
+        .fade-in { animation: fadeIn 0.5s ease-in-out; }
+        @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
     </style>
 </head>
 <body class="bg-gray-900 text-white min-h-screen flex items-center justify-center p-4 font-mono">
 
-    <!-- LOGIN SECTION -->
     <div id="username-section" class="w-full max-w-md bg-gray-800 rounded-lg shadow-xl p-8 border border-gray-700">
         <h1 class="text-3xl font-bold text-center mb-6 text-indigo-400 tracking-wider">TYPING RACE</h1>
         <div class="mb-4">
@@ -30,13 +28,20 @@
         <button id="start-btn" class="w-full bg-indigo-600 hover:bg-indigo-700 text-white font-bold py-3 px-4 rounded transition-all transform hover:scale-105">MASUK ARENA</button>
     </div>
     
-    <!-- MAIN LAYOUT -->
     <div id="main-layout" class="hidden w-full max-w-6xl grid grid-cols-1 lg:grid-cols-3 gap-6">
         
-        <!-- GAME AREA -->
-        <div class="lg:col-span-2 bg-gray-800 rounded-lg border border-gray-700 p-8 h-[85vh] flex flex-col relative shadow-lg">
+        <div class="lg:col-span-2 bg-gray-800 rounded-lg border border-gray-700 p-8 h-[85vh] flex flex-col relative shadow-lg overflow-hidden">
             
-            <!-- MENU AWAL -->
+            <div id="connection-alert" class="hidden absolute top-0 left-0 w-full bg-red-900/90 border-b border-red-500 p-3 flex items-center justify-between z-50 fade-in">
+                <div class="flex items-center gap-3">
+                    <span class="text-2xl">🔌</span>
+                    <span class="text-red-100 font-bold text-sm">Koneksi ke Server Terputus.</span>
+                </div>
+                <button onclick="window.location.reload()" class="bg-red-700 hover:bg-red-600 text-white text-xs px-3 py-1 rounded transition-colors border border-red-500">
+                    Reconnect
+                </button>
+            </div>
+
             <div id="game-menu" class="flex flex-col items-center justify-center h-full">
                 <h2 class="text-3xl mb-2 font-bold">Halo, <span id="display-username" class="text-indigo-400">Player</span></h2>
                 <p class="text-gray-400 mb-8">Siap menguji kecepatan jarimu?</p>
@@ -45,7 +50,6 @@
                 </button>
             </div>
             
-            <!-- LOADING SCREEN -->
             <div id="game-loading" class="hidden flex flex-col items-center justify-center h-full">
                 <div class="loader ease-linear rounded-full border-8 border-t-8 border-gray-200 h-24 w-24 mb-6"></div>
                 <h2 class="text-2xl font-bold text-yellow-400 mb-2">Mencari Lawan...</h2>
@@ -53,10 +57,8 @@
                 <p id="loading-msg" class="text-gray-500 text-sm mt-4 animate-pulse">Menunggu koneksi...</p>
             </div>
             
-            <!-- GAMEPLAY AREA -->
             <div id="game-play" class="hidden h-full flex flex-col relative">
                 
-                <!-- TIMER DISPLAY -->
                 <div class="absolute top-0 left-1/2 transform -translate-x-1/2 -translate-y-1/2 bg-gray-900 px-6 py-2 rounded-b-lg border-b border-x border-gray-600 shadow-lg z-10">
                     <div class="text-2xl font-bold text-yellow-400 tracking-widest flex items-center gap-2">
                         <span>⏱️</span> <span id="timer-display">00:00</span>
@@ -65,10 +67,8 @@
 
                 <div id="countdown" class="absolute inset-0 flex items-center justify-center bg-gray-900/90 z-50 text-9xl font-bold text-yellow-400 hidden rounded-lg">3</div>
                 
-                <!-- DASHBOARD PROGRESS -->
                 <div class="bg-gray-900 p-4 rounded-lg border border-gray-600 shadow-inner mb-4 mt-6">
                     
-                    <!-- ROW: LAWAN -->
                     <div class="flex flex-col mb-4">
                         <div class="flex justify-between text-sm mb-1">
                             <span class="text-red-400 font-bold flex items-center">
@@ -84,7 +84,6 @@
                         </div>
                     </div>
 
-                    <!-- ROW: SAYA -->
                     <div class="flex flex-col">
                         <div class="flex justify-between text-sm mb-1">
                             <span class="text-green-400 font-bold flex items-center">
@@ -101,12 +100,10 @@
                     </div>
                 </div>
                 
-                <!-- TEXT TARGET -->
                 <div class="flex-grow bg-gray-700 p-6 rounded-lg mb-4 overflow-auto border border-gray-600 shadow-inner no-select cursor-default" oncontextmenu="return false;">
                     <p id="text-target" class="text-xl leading-loose font-mono text-gray-300"></p>
                 </div>
                 
-                <!-- INPUT AREA -->
                 <div>
                     <input type="text" id="typing-input" 
                            class="w-full bg-gray-900 border-2 border-gray-500 p-4 rounded-lg text-white text-lg focus:border-green-500 focus:outline-none transition-all placeholder-gray-600" 
@@ -119,7 +116,6 @@
             </div>
         </div>
 
-        <!-- LEADERBOARD -->
         <div class="lg:col-span-1 bg-gray-800 rounded-lg border border-gray-700 p-6 h-[85vh] flex flex-col shadow-lg">
             <h2 class="text-xl font-bold text-yellow-400 mb-4 border-b border-gray-600 pb-2 flex items-center">
                 <span class="mr-2">🏆</span> LEADERBOARD
@@ -140,6 +136,7 @@
         let wpmUpdateInterval = null;
     
         const els = {
+            alertBar: document.getElementById('connection-alert'),
             loginSec: document.getElementById('username-section'),
             mainLayout: document.getElementById('main-layout'),
             menuState: document.getElementById('game-menu'),
@@ -178,18 +175,39 @@
 
         els.btnPlay.onclick = () => {
             switchState('loading');
-            ws.send(JSON.stringify({ type: "req_matchmaking" }));
+            if(ws && ws.readyState === WebSocket.OPEN) {
+                ws.send(JSON.stringify({ type: "req_matchmaking" }));
+            }
         };
 
         function initSocket() {
             ws = new WebSocket(`${wsProtocol}//${window.location.host}/stream/${username}`);
-            ws.onopen = () => console.log("Connected");
+            
+            ws.onopen = () => {
+                console.log("WebSocket Connected");
+                els.alertBar.classList.add('hidden'); 
+            };
+            
             ws.onmessage = (e) => handleMessage(JSON.parse(e.data));
+            
+            ws.onclose = (e) => {
+                console.warn("WebSocket Closed:", e);
+                showConnectionError();
+            };
+
+            ws.onerror = (e) => {
+                console.error("WebSocket Error:", e);
+                showConnectionError();
+            };
+        }
+
+        function showConnectionError() {
+            els.alertBar.classList.remove('hidden');
+            els.inputTyping.disabled = true;
+            stopTimer();
         }
 
         function handleMessage(msg) {
-            console.log("IN:", msg);
-            
             if (msg.type === 'res_leaderboard' || msg.type === 'leaderboard_update') {
                 renderLeaderboard(msg.data || msg.leaderboard);
             }
@@ -284,7 +302,6 @@
             
             startTime = Date.now();
 
-            
             clearInterval(wpmUpdateInterval);
             wpmUpdateInterval = setInterval(() => {
                 if (!els.inputTyping.disabled) {
@@ -373,11 +390,9 @@
             });
         }
 
-        
         function updateStats(checkFinish = true) {
             const inputVal = els.inputTyping.value;
             const targetVal = targetText;
-            
             
             const inputWords = inputVal.split(' ');
             const targetWords = targetVal.split(' ');
@@ -404,19 +419,16 @@
                 }
             }
 
-            
             const elapsedMinutes = Math.max((Date.now() - startTime) / 60000, 0.0001);
             const wpm = Math.round((correctCharsFromWords / 5) / elapsedMinutes);
             
             const progress = Math.min(100, (correctCharsFromWords / targetText.length) * 100);
             const progressInt = Math.floor(progress);
 
-            
             els.myWpm.textContent = wpm;
             els.myBar.style.width = `${progress}%`;
             els.myPercent.textContent = `${progressInt}%`;
 
-            
             if (ws && ws.readyState === WebSocket.OPEN) {
                 ws.send(JSON.stringify({
                     type: "progress",
@@ -425,14 +437,12 @@
                 }));
             }
 
-            
             if (checkFinish && inputVal === targetText) {
                 ws.send(JSON.stringify({ type: "finish", wpm: wpm }));
                 els.inputTyping.disabled = true;
                 clearInterval(wpmUpdateInterval); 
             }
         }
-
         
         els.inputTyping.addEventListener('paste', (e) => e.preventDefault());
         

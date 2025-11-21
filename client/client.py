@@ -9,7 +9,6 @@ from aiohttp import web, WSMsgType
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 TEMPLATE_DIR = os.path.join(BASE_DIR, 'templates')
 
-# Variabel global untuk target server TCP
 SERVER_TCP_HOST = '127.0.0.1' 
 SERVER_TCP_PORT = 50000
 
@@ -19,40 +18,49 @@ async def handle_index(request):
 async def tcp_bridge_handler(request):
     """
     Jembatan: WebSocket (Browser) <--> TCP Socket (Server)
-    Fitur: Login otomatis ke TCP, lalu piping data game/leaderboard.
     """
     username = request.match_info.get('username')
-    print(f"[CLIENT] Browser connect: {username}")
+    print(f"[CLIENT-WEB] Browser connected: {username}")
 
     ws_browser = web.WebSocketResponse()
     await ws_browser.prepare(request)
 
     writer = None
     try:
-        print(f"[CLIENT] Connecting to TCP Server {SERVER_TCP_HOST}:{SERVER_TCP_PORT}...")
+        print(f"[CLIENT-TCP] Connecting to {SERVER_TCP_HOST}:{SERVER_TCP_PORT}...")
         reader, writer = await asyncio.open_connection(SERVER_TCP_HOST, SERVER_TCP_PORT)
-        print("[CLIENT] Connected to TCP Server.")
+        print("[CLIENT-TCP] Connected.")
 
-        login_payload = json.dumps({"type": "login", "username": username}) + "\n"
-        writer.write(login_payload.encode())
+        login_payload = json.dumps({"type": "login", "username": username}) 
+        print(f"[CLIENT-TCP] >> Sending Login: {login_payload}")
+        writer.write((login_payload + "\n").encode())
         await writer.drain()
 
         async def browser_to_tcp():
+            """Membaca dari Browser, kirim ke TCP Server"""
             async for msg in ws_browser:
                 if msg.type == WSMsgType.TEXT:
+                    if "progress" not in msg.data:
+                        print(f"[CLIENT-TCP] >> Sending to Server: {msg.data}")
+                    
                     tcp_msg = msg.data + "\n"
                     writer.write(tcp_msg.encode())
                     await writer.drain()
                 elif msg.type == WSMsgType.ERROR:
-                    print('ws_browser error')
+                    print(f'[CLIENT-WEB] ws_browser connection closed with exception {ws_browser.exception()}')
 
         async def tcp_to_browser():
+            """Membaca dari TCP Server, kirim ke Browser"""
             while True:
                 data = await reader.readline()
                 if not data:
+                    print("[CLIENT-TCP] Server closed connection.")
                     break
                 text_data = data.decode().strip()
                 if text_data:
+                    if "opponent_progress" not in text_data:
+                        print(f"[CLIENT-TCP] << Received from Server: {text_data}")
+                        
                     await ws_browser.send_str(text_data)
 
         await asyncio.wait(
@@ -64,7 +72,7 @@ async def tcp_bridge_handler(request):
     except Exception as e:
         print(f"[CLIENT] Bridge Error: {e}")
     finally:
-        print(f"[CLIENT] Closing session for {username}")
+        print(f"[CLIENT] Disconnecting session for {username}...")
         if writer:
             writer.close()
             try:
@@ -72,6 +80,7 @@ async def tcp_bridge_handler(request):
             except:
                 pass
         await ws_browser.close()
+        print("[CLIENT] Done.")
         return ws_browser
 
 async def init_app():
@@ -82,8 +91,10 @@ async def init_app():
     return app
 
 def main():
-    print(f"Konfigurasi Target TCP Server: {SERVER_TCP_HOST}:{SERVER_TCP_PORT}")
-    print("Menjalankan CLIENT WEB & BRIDGE di http://localhost:8000")
+    print(f"--- CONFIGURATION ---")
+    print(f"Target TCP Server : {SERVER_TCP_HOST}:{SERVER_TCP_PORT}")
+    print(f"Web Client URL    : http://localhost:8000")
+    print(f"---------------------")
     web.run_app(init_app(), port=8000)
 
 if __name__ == '__main__':
