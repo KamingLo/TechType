@@ -37,9 +37,10 @@ async def tcp_bridge_handler(request):
         await writer.drain()
 
         async def browser_to_tcp():
-            """Membaca dari Browser, kirim ke TCP Server"""
             async for msg in ws_browser:
                 if msg.type == WSMsgType.TEXT:
+                    if "ping" in msg.data: continue 
+                    
                     if "progress" not in msg.data:
                         print(f"[CLIENT-TCP] >> Sending to Server: {msg.data}")
                     
@@ -47,10 +48,9 @@ async def tcp_bridge_handler(request):
                     writer.write(tcp_msg.encode())
                     await writer.drain()
                 elif msg.type == WSMsgType.ERROR:
-                    print(f'[CLIENT-WEB] ws_browser connection closed with exception {ws_browser.exception()}')
+                    print(f'[CLIENT-WEB] ws_browser closed with exception {ws_browser.exception()}')
 
         async def tcp_to_browser():
-            """Membaca dari TCP Server, kirim ke Browser"""
             while True:
                 data = await reader.readline()
                 if not data:
@@ -60,12 +60,22 @@ async def tcp_bridge_handler(request):
                 if text_data:
                     if "opponent_progress" not in text_data:
                         print(f"[CLIENT-TCP] << Received from Server: {text_data}")
-                        
                     await ws_browser.send_str(text_data)
 
+        async def heartbeat():
+            while True:
+                await asyncio.sleep(1)
+                if not ws_browser.closed:
+                    await ws_browser.send_json({"type": "ping"})
+                else:
+                    break
+
         await asyncio.wait(
-            [asyncio.create_task(browser_to_tcp()), 
-             asyncio.create_task(tcp_to_browser())],
+            [
+                asyncio.create_task(browser_to_tcp()), 
+                asyncio.create_task(tcp_to_browser()),
+                asyncio.create_task(heartbeat())
+            ],
             return_when=asyncio.FIRST_COMPLETED
         )
 

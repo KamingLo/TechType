@@ -30,9 +30,26 @@ class GameController:
         self.player_usernames: Dict[asyncio.StreamWriter, str] = {}
         self.session_factory = session_factory
         self.text_pool = [
-            "The boy's name was Santiago. Dusk was falling as the boy arrived with his herd at an abandoned church.",
-            "Minecraft is a popular sandbox game that allows players to explore, build, and survive in a blocky, pixelated world.",
-            "Every day, millions of Indian women and men perform the invisible work that keeps families functioning."
+            "Sometimes the problem isn't about time. Not everyone picks the right path for themselves on the first try, and that can be pretty harmful. If you find a path that matches your strengths, you'll go really fast and really far. But the truth is, not everyone can figure that out right away.",
+            "Animal birds are also necessary for environmental balance. Their numbers are decreasing due to hunting and other reasons. This has added to the mess in the food chain. The balance is disturbed and natural imbalance is encouraged.",
+            "Rivers of the Himalayas are perennial, with water usually obtained from melting ice. There is a smooth flow throughout the year. The Himalayas receive heavy rainfall during the monsoon month, causing frequent flooding due to increased water in the rivers.",
+            "Summer is the hottest season of the year although children enjoy it a lot due to the long holiday. It is a very interesting andentertaining season for them as they get a chance to go swimming and enjoy the hilly areas and eat ice cream and theirfavourite fruits.",
+            "Honey bees are a fascinating and important species that play a crucial role in our ecosystem. These small creatures may seem insignificant but they are responsible for the pollination of a significant portion of the worlds food crops.",
+            "Climate change stands as one of the most pressing issues of our time wielding a profound impact on the delicate balance of ecosystems worldwide. One of the most significant consequences of this global phenomenon is its far-reaching effects on biodiversity.",
+            "Water is the lifeblood of our planet essential for all living beings. Yet despite its fundamental importance the world faces an impending water crisis of unprecedented scale. The Global Water Crisis encapsulates a myriad of challenges scarcity pollution unequal distribution and inadequate access to safe drinking water.",
+            "In recent decades, fossil fuels such as coal, oil, and natural gas have remained the primary sources of energy across the globe. However, growing environmental concerns and the finite nature of these resources have prompted several countries to promote alternative, renewable energy sources like solar.",
+            "In true friendship there is skill and determination like that of a best doctor, patience and tenderness like that of a best mother. Every person should try to make such friendship. A scholar believes that if we get a reliable friend, then our life remains safe.",
+            "Literature has been considered as the repast of the elite and the educated. Literature most commonly refers to works of the creative imagination. The literary author is assumed to inhabit the legendary ivory tower which is far removed from the practical concerns of everyday life.",
+            "Discipline is the invisible framework that supports every long-term ambition, and it grows stronger each time we choose consistent effort over comfortable excuses. People often wait for motivation, imagining a burst of energy that will carry them to success, yet motivation is like weather-pleasant when it appears.",
+            "Globalisation has intensified economic and cultural interactions among nations. While some argue that this phenomenon promotes mutual understanding and development, others fear it threatens traditional values and cultural identity. Both perspectives have validity.",
+            "Technology has become an inseparable part of our daily lives, influencing the way we work, communicate, learn, and even think. From the moment we wake up and check our smartphones to the time we go to bed scrolling through social media or watching videos online, technology surrounds us in every possible form. ",
+            "I believe that history should be made a compulsory course in high school because history serves as a window to the past, enabling students to understand the roots of society, the evolution of cultures, and the forces that have shaped the world we live in today.",
+            "Modern communication has transformed dramatically with the rise of digital technology and global connectivity. Every organization now depends on effective collaboration and constant innovation to maintain competitiveness.",
+            "Barbados is an island nation in the eastern Caribbean, known for its white sand beaches, coral reefs, and rich cultural traditions. The capital city, Bridgetown, serves as the political, commercial, and cultural heart of the country.",
+            "Minecraft is a popular sandbox game that allows players to explore, build, and survive in a blocky, pixelated world. Its open-ended gameplay encourages creativity and experimentation, making it one of the most beloved games worldwide.",
+            "The boy's name was Santiago. Dusk was falling as the boy arrived with his herd at an abandoned church. The roof had fallen in long ago, and an enormous sycamore had grown on the spot where the sacristy had once stood.",
+            "Artificial Intelligence has rapidly transforming the functioning of the financial market globally. From high-speed algorithm trading to fraud detection and risk management, AI has become the essential part of the market infrastructure.",
+            "The real task is to observe the storm within: the urge to upgrade, to compare, to display. That same storm heats both the atmosphere and the psyche. When awareness deepens, manipulation loses its hold. The person who knows his phone works perfectly will not bow to an advertisement promising completion through an upgrade."
         ]
         self.active_connections: Set[asyncio.StreamWriter] = set()
 
@@ -46,7 +63,6 @@ class GameController:
             if not line: return
 
             try:
-        
                 print(f"[SERVER] << Raw Data Login dari {addr}: {line.decode().strip()}")
                 
                 login_msg = json.loads(line.decode().strip())
@@ -57,7 +73,6 @@ class GameController:
                     
                     print(f"[SERVER] {username} has connected.")
                     
-            
                     lb_data = await self._get_leaderboard()
                     await self._safe_send(writer, {"type": "res_leaderboard", "data": lb_data})
                 else:
@@ -96,24 +111,65 @@ class GameController:
         if msg_type == "req_leaderboard":
             leaderboard_data = await self._get_leaderboard()
             await self._safe_send(writer, {"type": "res_leaderboard", "data": leaderboard_data})
+        
         elif msg_type == "req_matchmaking":
             print(f"[SERVER] {self.player_usernames.get(writer)} meminta matchmaking...")
-            await self._handle_matchmaking_logic(writer)
+
+
+            asyncio.create_task(self._handle_matchmaking_logic(writer))
+            
+        elif msg_type == "cancel_matchmaking":
+            await self._handle_cancel_matchmaking(writer)
+            
         elif msg_type in ["progress", "finish"]:
             await self._process_game_play_message(writer, message)
 
     async def _handle_matchmaking_logic(self, writer: asyncio.StreamWriter):
+        if writer in self.waiting_players:
+            return 
+
         if not self.waiting_players:
             matched = await self._enqueue_player(writer)
             if not matched: return
         else:
+
             while self.waiting_players:
                 opponent = self.waiting_players.pop(0)
+                
+    
+                opp_event = self.waiting_events.pop(opponent, None)
+                
                 if not opponent.is_closing():
                     print(f"[SERVER] Match found! Memulai game...")
+                    
+        
+                    self.opponents[writer] = opponent
+                    self.opponents[opponent] = writer
+                    
+        
+                    if opp_event: opp_event.set()
+                    
                     await self._begin_match(opponent, writer)
                     return
+            
+
             await self._enqueue_player(writer)
+
+    async def _handle_cancel_matchmaking(self, writer: asyncio.StreamWriter):
+        username = self.player_usernames.get(writer)
+        
+        if writer in self.waiting_players:
+            self.waiting_players.remove(writer)
+            
+
+
+            event = self.waiting_events.pop(writer, None)
+            if event: 
+                event.set()
+                
+            print(f"[SERVER] {username} membatalkan matchmaking.")
+            
+        await self._safe_send(writer, {"type": "matchmaking_canceled"})
 
     async def _process_game_play_message(self, writer: asyncio.StreamWriter, message: dict) -> None:
         msg_type = message.get("type")
@@ -139,8 +195,18 @@ class GameController:
         
         wait_task = asyncio.create_task(event.wait())
         try:
+
             await wait_task
-            return True
+            
+
+
+
+            if writer in self.opponents:
+                return True
+            else:
+    
+                return False
+                
         except asyncio.CancelledError:
             return False
         finally:
@@ -154,8 +220,6 @@ class GameController:
         state.progress_map[player1] = 0
         state.progress_map[player2] = 0
 
-        self.opponents[player1] = player2
-        self.opponents[player2] = player1
         self.game_states[player1] = state
         self.game_states[player2] = state
 
@@ -166,9 +230,6 @@ class GameController:
 
         await self._safe_send(player1, {"status": "matched", "opponent": p2_name})
         await self._safe_send(player2, {"status": "matched", "opponent": p1_name})
-
-        event = self.waiting_events.pop(player1, None)
-        if event: event.set()
 
         await self._run_countdown(state)
 
@@ -315,9 +376,6 @@ class GameController:
             print(f"[SERVER] Gagal menyimpan skor: {exc}")
 
     async def _get_leaderboard(self) -> List[dict]:
-        """
-        Mengambil top 10 leaderboard dari database.
-        """
         try:
             async with self.session_factory() as session:
                 max_wpm = func.max(Score.wpm).label("max_wpm")
@@ -343,7 +401,6 @@ class GameController:
         try:
             if writer.is_closing(): return
             
-    
             username = self.player_usernames.get(writer, "Unknown")
             msg_type = payload.get("type", "unknown")
             if msg_type not in ["opponent_progress", "countdown"]:
