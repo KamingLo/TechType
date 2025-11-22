@@ -8,9 +8,11 @@ from controllers.game_controller import GameController
 game_controller = GameController(get_async_session)
 
 async def main(host, port):
-    print("--- TCP SERVER STARTUP ---")
+    print("\n=== TCP GAME SERVER STARTUP ===")
     
+    print("[SERVER] Memeriksa database...")
     await init_db()
+    print("[SERVER] Database siap.")
     
     server = await asyncio.start_server(
         game_controller.handle_connection, 
@@ -18,8 +20,8 @@ async def main(host, port):
         port
     )
     
-    print(f"Menjalankan TCP Server di {host}:{port}")
-    print("Menunggu koneksi client...")
+    print(f"[SERVER] Server berjalan di {host}:{port}")
+    print("[SERVER] Menunggu koneksi client...\n")
     
     async with server:
         await server.serve_forever()
@@ -36,6 +38,6 @@ if __name__ == '__main__':
         
         asyncio.run(main(host, port))
     except KeyboardInterrupt:
-        print("\nServer dihentikan.")
+        print("\n[SERVER] Server dihentikan")
     except Exception as e:
-        print(f"Error: {e}")
+        print(f"[ERROR] Fatal: {e}")

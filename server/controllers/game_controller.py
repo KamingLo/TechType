@@ -63,7 +63,6 @@ class GameController:
             if not line: return
 
             try:
-                print(f"[SERVER] << Raw Data Login dari {addr}: {line.decode().strip()}")
                 
                 login_msg = json.loads(line.decode().strip())
                 if login_msg.get('type') == 'login':
@@ -71,14 +70,15 @@ class GameController:
                     self.player_usernames[writer] = username
                     self.active_connections.add(writer)
                     
-                    print(f"[SERVER] {username} has connected.")
+                    print(f"[SERVER] User '{username}' berhasil masuk. Total online: {len(self.active_connections)}")
                     
                     lb_data = await self._get_leaderboard()
                     await self._safe_send(writer, {"type": "res_leaderboard", "data": lb_data})
                 else:
+                    print(f"[SERVER] Format login salah dari {addr}")
                     return
             except json.JSONDecodeError:
-                print(f"[SERVER] Error decode JSON saat login dari {addr}")
+                print(f"[SERVER] Gagal decode JSON login dari {addr}")
                 return
 
             while True:
@@ -103,7 +103,7 @@ class GameController:
                 writer.close()
                 await writer.wait_closed()
             except: pass
-            print(f"[SERVER] Koneksi {username} ditutup sepenuhnya.")
+            print(f"[SERVER] Koneksi user '{username}' ditutup sepenuhnya.")
 
     async def _process_general_message(self, writer: asyncio.StreamWriter, message: dict) -> None:
         msg_type = message.get("type")
@@ -114,8 +114,6 @@ class GameController:
         
         elif msg_type == "req_matchmaking":
             print(f"[SERVER] {self.player_usernames.get(writer)} meminta matchmaking...")
-
-
             asyncio.create_task(self._handle_matchmaking_logic(writer))
             
         elif msg_type == "cancel_matchmaking":
@@ -132,27 +130,17 @@ class GameController:
             matched = await self._enqueue_player(writer)
             if not matched: return
         else:
-
             while self.waiting_players:
                 opponent = self.waiting_players.pop(0)
-                
-    
                 opp_event = self.waiting_events.pop(opponent, None)
                 
                 if not opponent.is_closing():
-                    print(f"[SERVER] Match found! Memulai game...")
-                    
-        
+                    print(f"[SERVER] Match ditemukan! Memulai game...")
                     self.opponents[writer] = opponent
                     self.opponents[opponent] = writer
-                    
-        
                     if opp_event: opp_event.set()
-                    
                     await self._begin_match(opponent, writer)
                     return
-            
-
             await self._enqueue_player(writer)
 
     async def _handle_cancel_matchmaking(self, writer: asyncio.StreamWriter):
@@ -160,15 +148,11 @@ class GameController:
         
         if writer in self.waiting_players:
             self.waiting_players.remove(writer)
-            
-
-
             event = self.waiting_events.pop(writer, None)
             if event: 
                 event.set()
-                
             print(f"[SERVER] {username} membatalkan matchmaking.")
-            
+
         await self._safe_send(writer, {"type": "matchmaking_canceled"})
 
     async def _process_game_play_message(self, writer: asyncio.StreamWriter, message: dict) -> None:
@@ -176,7 +160,7 @@ class GameController:
         if msg_type == "progress":
             await self._relay_progress(writer, message)
         elif msg_type == "finish":
-            print(f"[SERVER] {self.player_usernames.get(writer)} menyelesaikan balapan!")
+            print(f"[SERVER] {self.player_usernames.get(writer)} menyelesaikan game!")
             await self._finish_game(writer, message)
 
     async def _enqueue_player(self, writer: asyncio.StreamWriter) -> bool:
@@ -195,18 +179,11 @@ class GameController:
         
         wait_task = asyncio.create_task(event.wait())
         try:
-
             await wait_task
-            
-
-
-
             if writer in self.opponents:
                 return True
             else:
-    
                 return False
-                
         except asyncio.CancelledError:
             return False
         finally:
@@ -255,7 +232,6 @@ class GameController:
             
             if state.finished:
                 return
-
             print("[SERVER] Waktu habis! Menentukan pemenang berdasarkan progress...")
             state.finished = True
             
@@ -302,7 +278,7 @@ class GameController:
                 await self._cleanup_player(p)
 
         except Exception as e:
-            print(f"[SERVER] Timer Error: {e}")
+            print(f"[SERVER] Timer game error: {e}")
 
     async def _relay_progress(self, writer: asyncio.StreamWriter, message: dict) -> None:
         state = self.game_states.get(writer)
@@ -334,7 +310,7 @@ class GameController:
         state.finished = True
         state.winner = username
         
-        print(f"[SERVER] Menyimpan skor untuk {username} (WPM: {winner_wpm})")
+        print(f"[SERVER] Menyimpan skor untuk pemenang '{username}' (WPM: {winner_wpm})")
         await self._record_score(username, winner_wpm)
         new_leaderboard = await self._get_leaderboard()
         await self._broadcast_leaderboard_update(new_leaderboard)
@@ -344,7 +320,6 @@ class GameController:
             "reason": "finish", 
             "leaderboard": new_leaderboard
         }
-        
         await self._safe_send(writer, {
             **base_msg, 
             "result": "won", 
@@ -371,7 +346,7 @@ class GameController:
             async with self.session_factory() as session:
                 async with session.begin():
                     session.add(Score(username=username, wpm=wpm))
-            print(f"[SERVER] Skor DB Updated: {username} - {wpm} WPM")
+            print(f"[SERVER] Skor disimpan: {username} = {wpm} WPM")
         except Exception as exc:
             print(f"[SERVER] Gagal menyimpan skor: {exc}")
 
@@ -387,7 +362,7 @@ class GameController:
             return []
 
     async def _broadcast_leaderboard_update(self, data: List[dict]):
-        print(f"[SERVER] Broadcasting Leaderboard Update ke {len(self.active_connections)} user.")
+        print(f"[SERVER] Mengirimkan data leaderboard terbaru ke {len(self.active_connections)} user.")
         payload = {"type": "leaderboard_update", "leaderboard": data}
         active = list(self.active_connections)
         for writer in active:
@@ -416,12 +391,13 @@ class GameController:
         if writer in self.active_connections:
             self.active_connections.remove(writer)
         username = self.player_usernames.pop(writer, "Unknown")
-        print(f"[SERVER] Handling disconnect: {username}")
+        print(f"[SERVER] User disconnect: {username}")
         
         if writer in self.waiting_players:
             self._cleanup_waiting(writer)
         opponent = self.opponents.get(writer)
         if opponent:
+            print(f"[SERVER] Memberitahu lawan bahwa {username} keluar.")
             await self._safe_send(opponent, {"status": "opponent_disconnected", "message": f"{username} keluar."})
             await self._cleanup_player(opponent)
         await self._cleanup_player(writer)
