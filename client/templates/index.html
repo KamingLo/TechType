@@ -15,6 +15,10 @@
         }
         .fade-in { animation: fadeIn 0.3s ease-in-out; }
         @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
+        .custom-scrollbar::-webkit-scrollbar { width: 8px; }
+        .custom-scrollbar::-webkit-scrollbar-track { background: #1f2937; }
+        .custom-scrollbar::-webkit-scrollbar-thumb { background: #4b5563; border-radius: 4px; }
+        .custom-scrollbar::-webkit-scrollbar-thumb:hover { background: #6b7280; }
     </style>
 </head>
 <body class="bg-gray-900 text-white min-h-screen flex items-center justify-center p-4">
@@ -32,23 +36,25 @@
         
         <div class="lg:col-span-2 bg-gray-800 rounded-lg border border-gray-700 p-8 h-[85vh] flex flex-col relative shadow-lg overflow-hidden">
             
-            <div id="connection-alert" class="hidden absolute top-0 left-0 w-full bg-red-900/95 border-b border-red-500 p-3 flex items-center justify-between z-[999] fade-in shadow-2xl">
+            <div id="connection-alert" class="hidden absolute top-0 left-0 w-full bg-red-900/95 border-b border-red-500 p-3 flex items-center justify-center z-[999] fade-in shadow-2xl">
                 <div class="flex items-center gap-3">
-                    <div class="flex flex-col">
-                        <span class="text-red-100 font-bold text-sm">KONEKSI KE SERVER TERPUTUS</span>
+                    <div class="flex flex-col items-center">
+                        <span class="text-red-100 font-bold text-sm uppercase tracking-wide">Koneksi Server Terputus</span>
                         <span class="text-red-300 text-xs">Menunggu server online kembali...</span>
                     </div>
                 </div>
-                <button onclick="window.location.reload()" class="bg-red-700 hover:bg-red-600 text-white text-xs px-4 py-2 rounded transition-colors border border-red-500 font-bold shadow-md">
-                    COBA HUBUNGKAN
-                </button>
             </div>
 
             <div id="game-menu" class="flex flex-col items-center justify-center h-full">
                 <h2 class="text-3xl mb-2 font-bold">Halo, <span id="display-username" class="text-indigo-400">Player</span></h2>
                 <p class="text-gray-400 mb-8">Siap menguji kecepatan jarimu?</p>
+                
                 <button id="play-btn" class="bg-green-600 hover:bg-green-500 text-white font-bold py-4 px-10 rounded-full text-xl shadow-lg transition-all transform hover:scale-105 flex items-center">
                     <span>CARI LAWAN</span>
+                </button>
+
+                <button id="reconnect-btn" onclick="window.location.reload()" class="hidden bg-red-600 hover:bg-red-500 text-white font-bold py-4 px-10 rounded-full text-xl shadow-lg transition-all transform hover:scale-105 flex items-center gap-2">
+                    <span>COBA HUBUNGKAN</span>
                 </button>
             </div>
             
@@ -103,7 +109,7 @@
                     </div>
                 </div>
                 
-                <div class="flex-grow bg-gray-700 p-6 rounded-lg mb-4 overflow-auto border border-gray-600 shadow-inner no-select cursor-default" oncontextmenu="return false;">
+                <div id="text-scroll-container" class="relative flex-grow bg-gray-700 p-6 rounded-lg mb-4 overflow-auto border border-gray-600 shadow-inner no-select cursor-default custom-scrollbar" oncontextmenu="return false;">
                     <p id="text-target" class="text-xl leading-loose font-mono text-gray-300"></p>
                 </div>
                 
@@ -153,10 +159,12 @@
             btnStart: document.getElementById('start-btn'),
             inputTyping: document.getElementById('typing-input'),
             btnPlay: document.getElementById('play-btn'),
+            btnReconnect: document.getElementById('reconnect-btn'),
             btnCancel: document.getElementById('cancel-match-btn'),
             queueCount: document.getElementById('queue-count'),
             loadingMsg: document.getElementById('loading-msg'),
             textDisplay: document.getElementById('text-target'),
+            textScrollContainer: document.getElementById('text-scroll-container'), 
             leaderboard: document.getElementById('leaderboard-list'),
             countdown: document.getElementById('countdown'),
             displayName: document.getElementById('display-username'),
@@ -182,22 +190,16 @@
         };
 
         els.btnPlay.onclick = () => {
-    
             switchState('loading');
-    
             resetLoadingState();
-            
             if(ws && ws.readyState === WebSocket.OPEN) {
                 ws.send(JSON.stringify({ type: "req_matchmaking" }));
             }
         };
 
-
         els.btnCancel.onclick = () => {
             if(ws && ws.readyState === WebSocket.OPEN) {
                 ws.send(JSON.stringify({ type: "cancel_matchmaking" }));
-                
-        
                 els.loadingMsg.textContent = "Sedang membatalkan...";
                 els.btnCancel.textContent = "Memproses...";
                 els.btnCancel.disabled = true;
@@ -211,6 +213,8 @@
             ws.onopen = () => {
                 console.log("WebSocket Connected");
                 els.alertBar.classList.add('hidden'); 
+                els.btnPlay.classList.remove('hidden');
+                els.btnReconnect.classList.add('hidden');
                 lastHeartbeat = Date.now();
                 startWatchdog();
             };
@@ -243,6 +247,9 @@
             els.inputTyping.disabled = true;
             stopTimer();
             clearInterval(watchdogInterval);
+            switchState('menu');
+            els.btnPlay.classList.add('hidden');
+            els.btnReconnect.classList.remove('hidden');
         }
 
         function handleMessage(msg) {
@@ -256,18 +263,11 @@
                 els.queueCount.textContent = msg.waiting_count || 1;
                 els.loadingMsg.textContent = msg.message;
             }
-            
-        
             else if (msg.type === 'matchmaking_canceled') {
-            
                 switchState('menu');
-                
-            
                 resetLoadingState();
-                
                 els.queueCount.textContent = '0';
             }
-            
             else if (msg.status === 'matched') {
                 els.loadingMsg.textContent = "Lawan ditemukan!";
                 els.oppName.textContent = msg.opponent;
@@ -300,7 +300,6 @@
             }
         }
 
-    
         function resetLoadingState() {
             els.loadingMsg.textContent = "Menunggu koneksi...";
             els.btnCancel.textContent = "BATALKAN PENCARIAN";
@@ -348,6 +347,8 @@
 
         function startGameLogic() {
             renderText();
+            els.textScrollContainer.scrollTop = 0;
+            
             els.inputTyping.disabled = false;
             els.inputTyping.value = '';
             els.inputTyping.focus();
@@ -379,7 +380,6 @@
             let subTextHtml = "";
             let textColor = "";
 
-        
             if (msg.reason === "timeout") {
                 titleHtml = "WAKTU HABIS!";
                 textColor = "text-orange-500";
@@ -398,20 +398,16 @@
         
             els.countdown.innerHTML = `
                 <div class="flex flex-col items-center justify-center bg-gray-900/95 p-12 rounded-2xl border border-gray-600 shadow-2xl min-w-[350px] min-h-[350px]">
-                    
                     <h1 class="text-6xl font-black tracking-wider ${textColor} mb-8 drop-shadow-md" style="text-shadow: 0 4px 10px rgba(0,0,0,0.5);">
                         ${titleHtml}
                     </h1>
-                    
                     ${subTextHtml ? `<p class="text-gray-400 text-lg mb-4 font-semibold">${subTextHtml}</p>` : ''}
-                    
                     <div class="flex flex-col items-center">
                         <span class="text-gray-400 text-3xl uppercase tracking-widest mb-2 font-bold">Final Speed</span>
                         <span class="text-5xl font-mono font-bold text-white tracking-tight">
                             ${msg.wpm} <span class="text-3xl text-gray-500">WPM</span>
                         </span>
                     </div>
-
                 </div>`;
             
             if(msg.leaderboard) renderLeaderboard(msg.leaderboard);
@@ -468,6 +464,23 @@
                 }
                 els.textDisplay.appendChild(span);
             });
+            
+            autoScroll();
+        }
+
+        function autoScroll() {
+            const inputLen = els.inputTyping.value.length;
+            const spans = els.textDisplay.children;
+            const container = els.textScrollContainer;
+            const activeSpan = spans[inputLen] || spans[spans.length - 1];
+
+            if (activeSpan && container) {
+                const spanTop = activeSpan.offsetTop;
+                const spanHeight = activeSpan.offsetHeight;
+                const containerHeight = container.clientHeight;
+                const targetScroll = spanTop - (containerHeight / 2) + (spanHeight / 2);
+                container.scrollTop = targetScroll;
+            }
         }
 
         function updateStats(checkFinish = true) {

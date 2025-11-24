@@ -228,11 +228,11 @@ class GameController:
 
     async def _monitor_game_duration(self, state: GameState):
         try:
-            await asyncio.sleep(self.game_duration)
+            await asyncio.sleep(self.game_duration + 2)
             
             if state.finished:
                 return
-            print("[SERVER] Waktu habis! Menentukan pemenang berdasarkan progress...")
+            print("[SERVER] Waktu habis! Menentukan pemenang...")
             state.finished = True
             
             p1, p2 = state.players[0], state.players[1]
@@ -416,4 +416,4 @@ class GameController:
     def _calculate_wpm(self, correct_chars_count: int, elapsed_seconds: float) -> int:
         words = correct_chars_count / 5
         minutes = max(elapsed_seconds / 60, 1e-4)
-        return max(1, round(words / minutes))
+        return max(0, round(words / minutes))
