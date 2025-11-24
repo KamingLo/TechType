@@ -34,7 +34,6 @@
             
             <div id="connection-alert" class="hidden absolute top-0 left-0 w-full bg-red-900/95 border-b border-red-500 p-3 flex items-center justify-between z-[999] fade-in shadow-2xl">
                 <div class="flex items-center gap-3">
-                    <span class="text-2xl animate-pulse">🔌</span>
                     <div class="flex flex-col">
                         <span class="text-red-100 font-bold text-sm">KONEKSI KE SERVER TERPUTUS</span>
                         <span class="text-red-300 text-xs">Menunggu server online kembali...</span>
@@ -49,7 +48,7 @@
                 <h2 class="text-3xl mb-2 font-bold">Halo, <span id="display-username" class="text-indigo-400">Player</span></h2>
                 <p class="text-gray-400 mb-8">Siap menguji kecepatan jarimu?</p>
                 <button id="play-btn" class="bg-green-600 hover:bg-green-500 text-white font-bold py-4 px-10 rounded-full text-xl shadow-lg transition-all transform hover:scale-105 flex items-center">
-                    <span>⚔️ CARI LAWAN</span>
+                    <span>CARI LAWAN</span>
                 </button>
             </div>
             
@@ -76,7 +75,7 @@
                     <div class="flex flex-col mb-4">
                         <div class="flex justify-between text-sm mb-1">
                             <span class="text-red-400 font-bold flex items-center">
-                                😈 LAWAN: <span id="opp-name" class="ml-1 text-white">...</span>
+                                LAWAN: <span id="opp-name" class="ml-1 text-white">...</span>
                             </span>
                             <div class="flex gap-3 text-sm">
                                 <span class="text-gray-400"><span id="opp-wpm" class="text-white font-bold text-base">0</span> WPM</span>
@@ -91,7 +90,7 @@
                     <div class="flex flex-col">
                         <div class="flex justify-between text-sm mb-1">
                             <span class="text-green-400 font-bold flex items-center">
-                                👤 SAYA (<span id="my-name-hud">You</span>)
+                                SAYA (<span id="my-name-hud">You</span>)
                             </span>
                             <div class="flex gap-3 text-sm">
                                 <span class="text-gray-400"><span id="my-wpm" class="text-white font-bold text-base">0</span> WPM</span>
@@ -110,12 +109,12 @@
                 
                 <div>
                     <input type="text" id="typing-input" 
-                           class="w-full bg-gray-900 border-2 border-gray-500 p-4 rounded-lg text-white text-lg focus:border-green-500 focus:outline-none transition-all placeholder-gray-600" 
-                           placeholder="Ketik teks di atas secepat mungkin..." 
-                           disabled 
-                           autocomplete="off"
-                           onpaste="return false;"
-                           ondrop="return false;">
+                            class="w-full bg-gray-900 border-2 border-gray-500 p-4 rounded-lg text-white text-lg focus:border-green-500 focus:outline-none transition-all placeholder-gray-600" 
+                            placeholder="Ketik teks di atas secepat mungkin..." 
+                            disabled 
+                            autocomplete="off"
+                            onpaste="return false;"
+                            ondrop="return false;">
                 </div>
             </div>
         </div>
@@ -396,8 +395,6 @@
                     textColor = "text-red-500";
                 }
             }
-                
-        
         
             els.countdown.innerHTML = `
                 <div class="flex flex-col items-center justify-center bg-gray-900/95 p-12 rounded-2xl border border-gray-600 shadow-2xl min-w-[350px] min-h-[350px]">
@@ -489,7 +486,7 @@
                     const isLastWord = (i === inputWords.length - 1);
                     const hasTrailingSpace = inputVal.endsWith(' ');
                     if (!isLastWord || (isLastWord && hasTrailingSpace)) {
-                         if (i < targetWords.length - 1) correctCharsFromWords++; 
+                            if (i < targetWords.length - 1) correctCharsFromWords++; 
                     }
                 }
             }
