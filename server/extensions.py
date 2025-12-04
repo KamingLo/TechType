@@ -38,14 +38,10 @@ async def get_async_session() -> AsyncSession:
     """
     async with AsyncSessionLocal() as session:
         try:
-            # Session diberikan ke fungsi pemanggil
             yield session
-            # Commit otomatis jika tidak ada error
             await session.commit()
         except:
-            # Rollback jika terjadi exception
             await session.rollback()
             raise
         finally:
-            # Pastikan session ditutup agar tidak bocor
             await session.close()

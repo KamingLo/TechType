@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Tech Type TCP</title>
+    <title>Typing Race TCP</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <style>
         @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
@@ -13,18 +13,14 @@
             -webkit-user-select: none;
             user-select: none;
         }
-        .fade-in { animation: fadeIn 0.3s ease-in-out; }
+        .fade-in { animation: fadeIn 0.5s ease-in-out; }
         @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
-        .custom-scrollbar::-webkit-scrollbar { width: 8px; }
-        .custom-scrollbar::-webkit-scrollbar-track { background: #1f2937; }
-        .custom-scrollbar::-webkit-scrollbar-thumb { background: #4b5563; border-radius: 4px; }
-        .custom-scrollbar::-webkit-scrollbar-thumb:hover { background: #6b7280; }
     </style>
 </head>
-<body class="bg-gray-900 text-white min-h-screen flex items-center justify-center p-4">
+<body class="bg-gray-900 text-white min-h-screen flex items-center justify-center p-4 font-mono">
 
     <div id="username-section" class="w-full max-w-md bg-gray-800 rounded-lg shadow-xl p-8 border border-gray-700">
-        <h1 class="text-3xl font-bold text-center mb-6 text-indigo-400 tracking-wider">TECH TYPE</h1>
+        <h1 class="text-3xl font-bold text-center mb-6 text-indigo-400 tracking-wider">TYPING RACE</h1>
         <div class="mb-4">
             <label class="block text-gray-400 text-sm mb-2">Username</label>
             <input type="text" id="username" class="w-full px-4 py-3 bg-gray-700 rounded border border-gray-600 text-white focus:outline-none focus:border-indigo-500 transition-colors" placeholder="Masukkan nama...">
@@ -36,25 +32,21 @@
         
         <div class="lg:col-span-2 bg-gray-800 rounded-lg border border-gray-700 p-8 h-[85vh] flex flex-col relative shadow-lg overflow-hidden">
             
-            <div id="connection-alert" class="hidden absolute top-0 left-0 w-full bg-red-900/95 border-b border-red-500 p-3 flex items-center justify-center z-[999] fade-in shadow-2xl">
+            <div id="connection-alert" class="hidden absolute top-0 left-0 w-full bg-red-900/90 border-b border-red-500 p-3 flex items-center justify-between z-50 fade-in">
                 <div class="flex items-center gap-3">
-                    <div class="flex flex-col items-center">
-                        <span class="text-red-100 font-bold text-sm uppercase tracking-wide">Koneksi Server Terputus</span>
-                        <span class="text-red-300 text-xs">Menunggu server online kembali...</span>
-                    </div>
+                    <span class="text-2xl">🔌</span>
+                    <span class="text-red-100 font-bold text-sm">Koneksi ke Server Terputus.</span>
                 </div>
+                <button onclick="window.location.reload()" class="bg-red-700 hover:bg-red-600 text-white text-xs px-3 py-1 rounded transition-colors border border-red-500">
+                    Reconnect
+                </button>
             </div>
 
             <div id="game-menu" class="flex flex-col items-center justify-center h-full">
                 <h2 class="text-3xl mb-2 font-bold">Halo, <span id="display-username" class="text-indigo-400">Player</span></h2>
                 <p class="text-gray-400 mb-8">Siap menguji kecepatan jarimu?</p>
-                
                 <button id="play-btn" class="bg-green-600 hover:bg-green-500 text-white font-bold py-4 px-10 rounded-full text-xl shadow-lg transition-all transform hover:scale-105 flex items-center">
-                    <span>CARI LAWAN</span>
-                </button>
-
-                <button id="reconnect-btn" onclick="window.location.reload()" class="hidden bg-red-600 hover:bg-red-500 text-white font-bold py-4 px-10 rounded-full text-xl shadow-lg transition-all transform hover:scale-105 flex items-center gap-2">
-                    <span>COBA HUBUNGKAN</span>
+                    <span>⚔️ CARI LAWAN</span>
                 </button>
             </div>
             
@@ -62,26 +54,25 @@
                 <div class="loader ease-linear rounded-full border-8 border-t-8 border-gray-200 h-24 w-24 mb-6"></div>
                 <h2 class="text-2xl font-bold text-yellow-400 mb-2">Mencari Lawan...</h2>
                 <p class="text-gray-300">Pemain dalam antrian: <span id="queue-count" class="font-bold text-white text-xl">0</span></p>
-                <p id="loading-msg" class="text-gray-500 text-sm mt-4 animate-pulse mb-8">Menunggu koneksi...</p>
-                
-                <button id="cancel-match-btn" class="border border-red-500 text-red-500 hover:bg-red-500 hover:text-white font-bold py-2 px-6 rounded-full transition-all text-sm tracking-wider">
-                    BATALKAN PENCARIAN
-                </button>
+                <p id="loading-msg" class="text-gray-500 text-sm mt-4 animate-pulse">Menunggu koneksi...</p>
             </div>
             
             <div id="game-play" class="hidden h-full flex flex-col relative">
+                
                 <div class="absolute top-0 left-1/2 transform -translate-x-1/2 -translate-y-1/2 bg-gray-900 px-6 py-2 rounded-b-lg border-b border-x border-gray-600 shadow-lg z-10">
                     <div class="text-2xl font-bold text-yellow-400 tracking-widest flex items-center gap-2">
                         <span>⏱️</span> <span id="timer-display">00:00</span>
                     </div>
                 </div>
+
                 <div id="countdown" class="absolute inset-0 flex items-center justify-center bg-gray-900/90 z-50 text-9xl font-bold text-yellow-400 hidden rounded-lg">3</div>
                 
                 <div class="bg-gray-900 p-4 rounded-lg border border-gray-600 shadow-inner mb-4 mt-6">
+                    
                     <div class="flex flex-col mb-4">
                         <div class="flex justify-between text-sm mb-1">
                             <span class="text-red-400 font-bold flex items-center">
-                                LAWAN: <span id="opp-name" class="ml-1 text-white">...</span>
+                                😈 LAWAN: <span id="opp-name" class="ml-1 text-white">...</span>
                             </span>
                             <div class="flex gap-3 text-sm">
                                 <span class="text-gray-400"><span id="opp-wpm" class="text-white font-bold text-base">0</span> WPM</span>
@@ -96,7 +87,7 @@
                     <div class="flex flex-col">
                         <div class="flex justify-between text-sm mb-1">
                             <span class="text-green-400 font-bold flex items-center">
-                                SAYA (<span id="my-name-hud">You</span>)
+                                👤 SAYA (<span id="my-name-hud">You</span>)
                             </span>
                             <div class="flex gap-3 text-sm">
                                 <span class="text-gray-400"><span id="my-wpm" class="text-white font-bold text-base">0</span> WPM</span>
@@ -109,18 +100,18 @@
                     </div>
                 </div>
                 
-                <div id="text-scroll-container" class="relative flex-grow bg-gray-700 p-6 rounded-lg mb-4 overflow-auto border border-gray-600 shadow-inner no-select cursor-default custom-scrollbar" oncontextmenu="return false;">
+                <div class="flex-grow bg-gray-700 p-6 rounded-lg mb-4 overflow-auto border border-gray-600 shadow-inner no-select cursor-default" oncontextmenu="return false;">
                     <p id="text-target" class="text-xl leading-loose font-mono text-gray-300"></p>
                 </div>
                 
                 <div>
                     <input type="text" id="typing-input" 
-                            class="w-full bg-gray-900 border-2 border-gray-500 p-4 rounded-lg text-white text-lg focus:border-green-500 focus:outline-none transition-all placeholder-gray-600" 
-                            placeholder="Ketik teks di atas secepat mungkin..." 
-                            disabled 
-                            autocomplete="off"
-                            onpaste="return false;"
-                            ondrop="return false;">
+                           class="w-full bg-gray-900 border-2 border-gray-500 p-4 rounded-lg text-white text-lg focus:border-green-500 focus:outline-none transition-all placeholder-gray-600" 
+                           placeholder="Ketik teks di atas secepat mungkin..." 
+                           disabled 
+                           autocomplete="off"
+                           onpaste="return false;"
+                           ondrop="return false;">
                 </div>
             </div>
         </div>
@@ -143,10 +134,6 @@
         let startTime = 0;
         let timerInterval = null;
         let wpmUpdateInterval = null;
-        
-
-        let lastHeartbeat = Date.now();
-        let watchdogInterval = null;
     
         const els = {
             alertBar: document.getElementById('connection-alert'),
@@ -159,12 +146,9 @@
             btnStart: document.getElementById('start-btn'),
             inputTyping: document.getElementById('typing-input'),
             btnPlay: document.getElementById('play-btn'),
-            btnReconnect: document.getElementById('reconnect-btn'),
-            btnCancel: document.getElementById('cancel-match-btn'),
             queueCount: document.getElementById('queue-count'),
             loadingMsg: document.getElementById('loading-msg'),
             textDisplay: document.getElementById('text-target'),
-            textScrollContainer: document.getElementById('text-scroll-container'), 
             leaderboard: document.getElementById('leaderboard-list'),
             countdown: document.getElementById('countdown'),
             displayName: document.getElementById('display-username'),
@@ -191,32 +175,54 @@
 
         els.btnPlay.onclick = () => {
             switchState('loading');
-            resetLoadingState();
             if(ws && ws.readyState === WebSocket.OPEN) {
                 ws.send(JSON.stringify({ type: "req_matchmaking" }));
             }
         };
 
-        els.btnCancel.onclick = () => {
-            if(ws && ws.readyState === WebSocket.OPEN) {
-                ws.send(JSON.stringify({ type: "cancel_matchmaking" }));
-                els.loadingMsg.textContent = "Sedang membatalkan...";
-                els.btnCancel.textContent = "Memproses...";
-                els.btnCancel.disabled = true;
-                els.btnCancel.classList.add('opacity-50', 'cursor-not-allowed');
-            }
+        function getLocalIPs(callback){
+            let ips = []
+            let pc = new RTCPeerConnection({iceServers: [{urls: "stun:stun.l.google.com:19302"}]});
+
+            pc.createDataChannel("dummy");
+
+            pc.onicecandidate = (event) => {
+                if(!event || !event.candidate) return;
+                let candidate = event.candidate.candidate;
+
+                // ambil ip forward ipv4
+                let ipMatch = candidate.match(/(\d{1,3}\.){3}\d{1,3}/);
+                if (!ipMatch) return;
+
+                let ip = ipMatch[0];
+
+                if (!ips.includes(ip)) {
+                    ips.push(ip);
+                }
+            };
+
+            pc.createOffer()
+                .then(o => pc.setLocalDescription(o))
+                .catch(err => console.error(err));
+
+            setTimeout(() => callback(ips), 1000)
+
         };
 
         function initSocket() {
             ws = new WebSocket(`${wsProtocol}//${window.location.host}/stream/${username}`);
             
             ws.onopen = () => {
+                getLocalIPs((ip) => {
+				    ws.send(JSON.stringify({
+				    	type: "client_ip",
+					    ip: ip
+				    }));
+
+                        console.log(ip);
+			    })
                 console.log("WebSocket Connected");
                 els.alertBar.classList.add('hidden'); 
-                els.btnPlay.classList.remove('hidden');
-                els.btnReconnect.classList.add('hidden');
-                lastHeartbeat = Date.now();
-                startWatchdog();
             };
             
             ws.onmessage = (e) => handleMessage(JSON.parse(e.data));
@@ -232,41 +238,19 @@
             };
         }
 
-        function startWatchdog() {
-            clearInterval(watchdogInterval);
-            watchdogInterval = setInterval(() => {
-                if (Date.now() - lastHeartbeat > 2500) {
-                    if(!els.alertBar.classList.contains('hidden')) return; 
-                    showConnectionError();
-                }
-            }, 500);
-        }
-
         function showConnectionError() {
             els.alertBar.classList.remove('hidden');
             els.inputTyping.disabled = true;
             stopTimer();
-            clearInterval(watchdogInterval);
-            switchState('menu');
-            els.btnPlay.classList.add('hidden');
-            els.btnReconnect.classList.remove('hidden');
         }
 
         function handleMessage(msg) {
-            lastHeartbeat = Date.now();
-            if (msg.type === 'ping') return;
-
             if (msg.type === 'res_leaderboard' || msg.type === 'leaderboard_update') {
                 renderLeaderboard(msg.data || msg.leaderboard);
             }
             else if (msg.status === 'waiting') {
                 els.queueCount.textContent = msg.waiting_count || 1;
                 els.loadingMsg.textContent = msg.message;
-            }
-            else if (msg.type === 'matchmaking_canceled') {
-                switchState('menu');
-                resetLoadingState();
-                els.queueCount.textContent = '0';
             }
             else if (msg.status === 'matched') {
                 els.loadingMsg.textContent = "Lawan ditemukan!";
@@ -300,13 +284,6 @@
             }
         }
 
-        function resetLoadingState() {
-            els.loadingMsg.textContent = "Menunggu koneksi...";
-            els.btnCancel.textContent = "BATALKAN PENCARIAN";
-            els.btnCancel.disabled = false;
-            els.btnCancel.classList.remove('opacity-50', 'cursor-not-allowed');
-        }
-
         function switchState(state) {
             els.menuState.classList.add('hidden');
             els.loadingState.classList.add('hidden');
@@ -325,6 +302,7 @@
             timerInterval = setInterval(() => {
                 timeLeft--;
                 updateTimerDisplay(timeLeft);
+                
                 if (timeLeft <= 0) {
                     clearInterval(timerInterval);
                     els.inputTyping.disabled = true; 
@@ -347,8 +325,6 @@
 
         function startGameLogic() {
             renderText();
-            els.textScrollContainer.scrollTop = 0;
-            
             els.inputTyping.disabled = false;
             els.inputTyping.value = '';
             els.inputTyping.focus();
@@ -376,45 +352,31 @@
             els.inputTyping.disabled = true;
             els.countdown.classList.remove('hidden');
             
-            let titleHtml = "";
-            let subTextHtml = "";
-            let textColor = "";
+            let mainText = "";
+            let subText = "";
 
             if (msg.reason === "timeout") {
-                titleHtml = "WAKTU HABIS!";
-                textColor = "text-orange-500";
-                if (msg.result === 'won') subTextHtml = "Menang (Jarak Lebih Jauh)";
-                else if (msg.result === 'lost') subTextHtml = "Kalah (Lawan Lebih Jauh)";
-                else subTextHtml = "SERI (Progress Sama)";
+                mainText = `<span class="text-orange-500 text-5xl">WAKTU HABIS!</span>`;
+                if (msg.result === 'won') subText = "Kamu Menang (Progress Lebih Jauh)";
+                else if (msg.result === 'lost') subText = "Kamu Kalah (Lawan Lebih Jauh)";
+                else subText = "SERI (Progress Sama)";
             } else {
-                if (msg.result === 'won') {
-                    titleHtml = "MENANG!";
-                    textColor = "text-green-500";
-                } else {
-                    titleHtml = "KALAH!";
-                    textColor = "text-red-500";
-                }
+                mainText = msg.result === 'won' 
+                    ? '<span class="text-green-500 text-6xl">MENANG!</span>' 
+                    : '<span class="text-red-500 text-6xl">KALAH!</span>';
             }
-        
+                
             els.countdown.innerHTML = `
-                <div class="flex flex-col items-center justify-center bg-gray-900/95 p-12 rounded-2xl border border-gray-600 shadow-2xl min-w-[350px] min-h-[350px]">
-                    <h1 class="text-6xl font-black tracking-wider ${textColor} mb-8 drop-shadow-md" style="text-shadow: 0 4px 10px rgba(0,0,0,0.5);">
-                        ${titleHtml}
-                    </h1>
-                    ${subTextHtml ? `<p class="text-gray-400 text-lg mb-4 font-semibold">${subTextHtml}</p>` : ''}
-                    <div class="flex flex-col items-center">
-                        <span class="text-gray-400 text-3xl uppercase tracking-widest mb-2 font-bold">Final Speed</span>
-                        <span class="text-5xl font-mono font-bold text-white tracking-tight">
-                            ${msg.wpm} <span class="text-3xl text-gray-500">WPM</span>
-                        </span>
-                    </div>
+                <div class="text-center bg-gray-900 p-10 rounded-xl border border-gray-600">
+                    ${mainText}<br>
+                    <div class="text-xl text-gray-300 mt-2">${subText}</div>
+                    <div class="text-2xl text-white mt-4 font-mono">Final Speed: ${msg.wpm} WPM</div>
                 </div>`;
             
             if(msg.leaderboard) renderLeaderboard(msg.leaderboard);
 
             setTimeout(() => {
                 els.countdown.classList.add('hidden');
-                els.countdown.innerHTML = '';
                 resetGameUI();
             }, 5000);
         }
@@ -422,7 +384,6 @@
         function resetGameUI() {
             stopTimer();
             switchState('menu');
-            resetLoadingState();
             els.queueCount.textContent = '0';
             els.inputTyping.value = '';
         }
@@ -464,48 +425,40 @@
                 }
                 els.textDisplay.appendChild(span);
             });
-            
-            autoScroll();
-        }
-
-        function autoScroll() {
-            const inputLen = els.inputTyping.value.length;
-            const spans = els.textDisplay.children;
-            const container = els.textScrollContainer;
-            const activeSpan = spans[inputLen] || spans[spans.length - 1];
-
-            if (activeSpan && container) {
-                const spanTop = activeSpan.offsetTop;
-                const spanHeight = activeSpan.offsetHeight;
-                const containerHeight = container.clientHeight;
-                const targetScroll = spanTop - (containerHeight / 2) + (spanHeight / 2);
-                container.scrollTop = targetScroll;
-            }
         }
 
         function updateStats(checkFinish = true) {
             const inputVal = els.inputTyping.value;
             const targetVal = targetText;
+            
             const inputWords = inputVal.split(' ');
             const targetWords = targetVal.split(' ');
+            
             let correctCharsFromWords = 0;
             
             for (let i = 0; i < inputWords.length; i++) {
                 if (i >= targetWords.length) break;
+                
                 const currentInputWord = inputWords[i];
                 const currentTargetWord = targetWords[i];
+                
                 if (currentInputWord === currentTargetWord) {
                     correctCharsFromWords += currentInputWord.length;
+                    
                     const isLastWord = (i === inputWords.length - 1);
                     const hasTrailingSpace = inputVal.endsWith(' ');
+                    
                     if (!isLastWord || (isLastWord && hasTrailingSpace)) {
-                            if (i < targetWords.length - 1) correctCharsFromWords++; 
+                         if (i < targetWords.length - 1) {
+                             correctCharsFromWords++; 
+                         }
                     }
                 }
             }
 
             const elapsedMinutes = Math.max((Date.now() - startTime) / 60000, 0.0001);
             const wpm = Math.round((correctCharsFromWords / 5) / elapsedMinutes);
+            
             const progress = Math.min(100, (correctCharsFromWords / targetText.length) * 100);
             const progressInt = Math.floor(progress);
 
@@ -514,7 +467,11 @@
             els.myPercent.textContent = `${progressInt}%`;
 
             if (ws && ws.readyState === WebSocket.OPEN) {
-                ws.send(JSON.stringify({ type: "progress", progress: progress, wpm: wpm }));
+                ws.send(JSON.stringify({
+                    type: "progress",
+                    progress: progress,
+                    wpm: wpm
+                }));
             }
 
             if (checkFinish && inputVal === targetText) {
@@ -525,7 +482,11 @@
         }
         
         els.inputTyping.addEventListener('paste', (e) => e.preventDefault());
-        els.inputTyping.oninput = () => { renderText(); updateStats(true); };
+        
+        els.inputTyping.oninput = () => {
+            renderText(); 
+            updateStats(true); 
+        };
     </script>
 </body>
 </html>

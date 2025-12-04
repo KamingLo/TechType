@@ -21,8 +21,8 @@ async def main(host, port):
     print("[SERVER] Database siap.")
     
     server = await asyncio.start_server(
-        game_controller.handle_connection,
-        host,
+        game_controller.handle_connection, 
+        host, 
         port
     )
     
@@ -33,7 +33,7 @@ async def main(host, port):
         await server.serve_forever()
 
 # fungsi yang mengganti variabel host dan port jikalau diisi.
-# bertujuan untuk memberikan ip dan port kepada server untuk berjalan 
+# bertujuan untuk memberikan ip dan port kepada server untuk berjalan
 if __name__ == '__main__':
     parser = argparse.ArgumentParser(description='TCP Game Server')
     parser.add_argument('--host', action="store", dest="host", required=True, help="Host IP address to bind")
