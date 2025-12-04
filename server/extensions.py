@@ -3,30 +3,34 @@ from sqlalchemy.ext.asyncio import create_async_engine, AsyncSession
 from sqlalchemy.orm import sessionmaker, declarative_base
 from contextlib import asynccontextmanager
 
-# Database akan dibuat di dalam folder /server/database/
+# Lokasi database SQLite untuk game typing_race
 DATABASE_URL = "sqlite+aiosqlite:///./database/typing_race.db"
 
+# Engine async yang digunakan SQLAlchemy untuk berkomunikasi dengan SQLite
 engine = create_async_engine(DATABASE_URL, echo=True)
 
+# Session factory yang menghasilkan session async setiap kali dibutuhkan
 AsyncSessionLocal = sessionmaker(
     bind=engine,
     class_=AsyncSession,
     expire_on_commit=False
 )
 
+# Base dari SQLAlchemy untuk membuat model tabel
 Base = declarative_base()
 
+# Fungsi untuk membuat semua tabel saat aplikasi pertama kali dijalankan
 async def init_db():
     """
     Membuat semua tabel di database.
     """
-    # Pastikan folder database ada
     import os
     os.makedirs(os.path.dirname(DATABASE_URL.split("///")[-1]), exist_ok=True)
     
     async with engine.begin() as conn:
         await conn.run_sync(Base.metadata.create_all)
 
+# Dependency injector untuk mengambil session database secara async
 @asynccontextmanager
 async def get_async_session() -> AsyncSession:
     """
@@ -34,10 +38,14 @@ async def get_async_session() -> AsyncSession:
     """
     async with AsyncSessionLocal() as session:
         try:
+            # Session diberikan ke fungsi pemanggil
             yield session
+            # Commit otomatis jika tidak ada error
             await session.commit()
         except:
+            # Rollback jika terjadi exception
             await session.rollback()
             raise
         finally:
+            # Pastikan session ditutup agar tidak bocor
             await session.close()

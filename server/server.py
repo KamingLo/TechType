@@ -4,9 +4,15 @@ import sys
 from extensions import init_db, get_async_session
 from controllers.game_controller import GameController
 
-# Inisialisasi controller
+# Inisialisasi controller utama yang akan menangani seluruh koneksi TCP
 game_controller = GameController(get_async_session)
 
+# Fungsi utama yang dijalankan saat server dibuka
+# Tugasnya:
+# 1) Inisialisasi database
+# 2) Membuat TCP server
+# 3) Menunggu dan menangani koneksi client
+# Referensi Kode Python Implementasi AsyncIOServer.py dari mata kuliah Distributed Systems
 async def main(host, port):
     print("\n=== TCP GAME SERVER STARTUP ===")
     
@@ -15,8 +21,8 @@ async def main(host, port):
     print("[SERVER] Database siap.")
     
     server = await asyncio.start_server(
-        game_controller.handle_connection, 
-        host, 
+        game_controller.handle_connection,
+        host,
         port
     )
     
@@ -26,6 +32,8 @@ async def main(host, port):
     async with server:
         await server.serve_forever()
 
+# fungsi yang mengganti variabel host dan port jikalau diisi.
+# bertujuan untuk memberikan ip dan port kepada server untuk berjalan 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser(description='TCP Game Server')
     parser.add_argument('--host', action="store", dest="host", required=True, help="Host IP address to bind")

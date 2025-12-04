@@ -8,6 +8,7 @@ from sqlalchemy.future import select
 from sqlalchemy import func 
 from models.score import Score
 
+# Menyimpan pemain, teks target, waktu mulai, progress, WPM, dan winner. Semacam snapshot kondisi game berjalan.
 @dataclass
 class GameState:
     players: List[asyncio.StreamWriter]
@@ -21,6 +22,8 @@ class GameState:
 
 class GameController:
 
+    # Dipakai untuk menyiapkan semua struktur data server: antrean pemain, mapping lawan, 
+    # mapping status permainan, daftar text pool, factory session DB, dan set koneksi aktif.
     def __init__(self, session_factory: Callable):
         self.game_duration = 90
         self.waiting_players: List[asyncio.StreamWriter] = []
@@ -53,6 +56,8 @@ class GameController:
         ]
         self.active_connections: Set[asyncio.StreamWriter] = set()
 
+    #Fungsi utama menangani koneksi TCP setiap klien.
+    #Untuk login user, menerima pesan, routing pesan ke handler lain, dan menangani disconnect.
     async def handle_connection(self, reader: asyncio.StreamReader, writer: asyncio.StreamWriter) -> None:
         addr = writer.get_extra_info('peername')
         print(f"[SERVER] Koneksi baru masuk dari {addr}...") 
@@ -105,6 +110,7 @@ class GameController:
             except: pass
             print(f"[SERVER] Koneksi user '{username}' ditutup sepenuhnya.")
 
+    #Mengenali tipe pesan (“req_leaderboard”, matchmaking, progress, finish, dll), lalu mengarahkan ke fungsi yang tepat.
     async def _process_general_message(self, writer: asyncio.StreamWriter, message: dict) -> None:
         msg_type = message.get("type")
 
@@ -115,6 +121,10 @@ class GameController:
         elif msg_type == "req_matchmaking":
             print(f"[SERVER] {self.player_usernames.get(writer)} meminta matchmaking...")
             asyncio.create_task(self._handle_matchmaking_logic(writer))
+
+        elif msg_type == "client_ip":
+            print(f"[SERVER] IP Client = {message.get('ip')}")
+            return 
             
         elif msg_type == "cancel_matchmaking":
             await self._handle_cancel_matchmaking(writer)
@@ -122,6 +132,10 @@ class GameController:
         elif msg_type in ["progress", "finish"]:
             await self._process_game_play_message(writer, message)
 
+    # Mengelola logika “mencarikan lawan”.
+    # Jika antrean kosong → masukkan user.
+    # Jika ada pemain lain → langsung pairing.
+    # Jika lawan disconnect → abaikan dan cari lagi.
     async def _handle_matchmaking_logic(self, writer: asyncio.StreamWriter):
         if writer in self.waiting_players:
             return 
@@ -143,6 +157,7 @@ class GameController:
                     return
             await self._enqueue_player(writer)
 
+    # Menghapus event menunggu dan mengirim respon “dibatalkan”.
     async def _handle_cancel_matchmaking(self, writer: asyncio.StreamWriter):
         username = self.player_usernames.get(writer)
         
@@ -155,6 +170,7 @@ class GameController:
 
         await self._safe_send(writer, {"type": "matchmaking_canceled"})
 
+    # Meneruskan ke handler relay progress atau penyelesaian game.
     async def _process_game_play_message(self, writer: asyncio.StreamWriter, message: dict) -> None:
         msg_type = message.get("type")
         if msg_type == "progress":
@@ -163,6 +179,7 @@ class GameController:
             print(f"[SERVER] {self.player_usernames.get(writer)} menyelesaikan game!")
             await self._finish_game(writer, message)
 
+    # Memasukkan pemain ke antrean, membuat event async, menunggu sampai dipasangkan lawan, atau dibatalkan.
     async def _enqueue_player(self, writer: asyncio.StreamWriter) -> bool:
         event = asyncio.Event()
         self.waiting_players.append(writer)
@@ -190,6 +207,7 @@ class GameController:
             if not event.is_set():
                 self._cleanup_waiting(writer)
 
+    # Membuat objek GameState baru, memilih teks acak, menetapkan progress awal, mencatat lawan masing-masing, lalu memulai countdown.
     async def _begin_match(self, player1: asyncio.StreamWriter, player2: asyncio.StreamWriter) -> None:
         target_text = random.choice(self.text_pool)
         state = GameState(players=[player1, player2], target_text=target_text)
@@ -210,6 +228,7 @@ class GameController:
 
         await self._run_countdown(state)
 
+    # Mengirim hitungan mundur 3-2-1 ke kedua pemain, set waktu mulai, lalu broadcast “start_game” lengkap dengan teks dan durasi.
     async def _run_countdown(self, state: GameState) -> None:
         for number in (3, 2, 1):
             await self._broadcast(state.players, {"type": "countdown", "value": number})
@@ -226,6 +245,7 @@ class GameController:
         
         asyncio.create_task(self._monitor_game_duration(state))
 
+    # Jika waktu habis dan belum ada pemenang → menilai progress kedua pemain, menentukan siapa lebih banyak mengetik, lalu menetapkan pemenang otomatis.
     async def _monitor_game_duration(self, state: GameState):
         try:
             await asyncio.sleep(self.game_duration + 2)
@@ -280,6 +300,7 @@ class GameController:
         except Exception as e:
             print(f"[SERVER] Timer game error: {e}")
 
+    # Dipakai untuk memperbarui progress dan WPM pemain selama pertandingan, lalu mengirim data tersebut ke lawannya.
     async def _relay_progress(self, writer: asyncio.StreamWriter, message: dict) -> None:
         state = self.game_states.get(writer)
         if state and not state.finished:
@@ -294,6 +315,8 @@ class GameController:
                 "wpm": message.get("wpm", 0) 
             })
 
+    # Menghitung waktu balapan, menentukan WPM pemenang, menyimpan skor ke database, 
+    # mengirim hasil ke kedua pemain, memperbarui leaderboard, lalu membersihkan data match.
     async def _finish_game(self, writer: asyncio.StreamWriter, message: dict) -> None:
         state = self.game_states.get(writer)
         if not state or state.finished: return
@@ -341,6 +364,7 @@ class GameController:
             
         await self._cleanup_player(writer)
 
+    # Menyimpan skor pemain yang menang ke database.
     async def _record_score(self, username: str, wpm: int) -> None:
         try:
             async with self.session_factory() as session:
@@ -350,6 +374,7 @@ class GameController:
         except Exception as exc:
             print(f"[SERVER] Gagal menyimpan skor: {exc}")
 
+    # Mengambil 10 skor terbaik dari database, dihitung berdasarkan WPM tertinggi tiap pengguna.
     async def _get_leaderboard(self) -> List[dict]:
         try:
             async with self.session_factory() as session:
@@ -361,6 +386,8 @@ class GameController:
             print(f"[SERVER] Error mengambil leaderboard: {exc}")
             return []
 
+    # Mengirim data leaderboard terbaru ke semua koneksi yang sedang aktif.
+    # Berguna setelah ada pertandingan selesai dan skor baru masuk.
     async def _broadcast_leaderboard_update(self, data: List[dict]):
         print(f"[SERVER] Mengirimkan data leaderboard terbaru ke {len(self.active_connections)} user.")
         payload = {"type": "leaderboard_update", "leaderboard": data}
@@ -368,10 +395,14 @@ class GameController:
         for writer in active:
             await self._safe_send(writer, payload)
 
+    # Mengirim payload yang sama ke beberapa pemain sekaligus.
+    # Digunakan untuk broadcast event tertentu di dalam game.
     async def _broadcast(self, players: List[asyncio.StreamWriter], payload: dict) -> None:
         for p in players:
             await self._safe_send(p, payload)
 
+    # Mengirim payload JSON ke satu pemain, sambil menangani kemungkinan error.
+    # Juga menampilkan log server agar aliran pesan mudah dilacak.
     async def _safe_send(self, writer: asyncio.StreamWriter, payload: dict) -> None:
         try:
             if writer.is_closing(): return
@@ -387,6 +418,8 @@ class GameController:
         except Exception as e:
             print(f"[SERVER] Gagal mengirim data ke client: {e}")
 
+    # Menghapusnya dari semua daftar aktif, memberi tahu lawan jika sedang bertanding, 
+    # lalu membersihkan status pemain itu dari server.
     async def _handle_disconnect(self, writer: asyncio.StreamWriter) -> None:
         if writer in self.active_connections:
             self.active_connections.remove(writer)
@@ -402,17 +435,20 @@ class GameController:
             await self._cleanup_player(opponent)
         await self._cleanup_player(writer)
 
+    # Menghapus pemain dari antrean matchmaking, dan membebaskan event menunggu jika ada.
     def _cleanup_waiting(self, writer: asyncio.StreamWriter) -> None:
         if writer in self.waiting_players:
             self.waiting_players.remove(writer)
         event = self.waiting_events.pop(writer, None)
         if event: event.set()
 
+    # Membersihkan semua jejak pemain dari server.
     async def _cleanup_player(self, writer: asyncio.StreamWriter) -> None:
         if not writer: return
         self.opponents.pop(writer, None)
         self.game_states.pop(writer, None)
 
+    # Menghitung Words Per Minute (WPM) pemain berdasarkan panjang teks yang sudah diketik dan waktu yang telah berlalu.
     def _calculate_wpm(self, correct_chars_count: int, elapsed_seconds: float) -> int:
         words = correct_chars_count / 5
         minutes = max(elapsed_seconds / 60, 1e-4)
